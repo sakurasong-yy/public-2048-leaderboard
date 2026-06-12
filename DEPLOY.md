@@ -1,25 +1,25 @@
-# 2048 正式发布最简流程
+# 2048 Railway 发布最简流程
 
-这个项目已经按 Render Web Service 准备好了：
+这个项目已经按 Railway 准备好了：
 
 - `npm start` 启动 `server.js`
 - `/api/health` 用作健康检查
-- `SCORES_FILE=/var/data/scores.json` 把排行榜写到持久磁盘
-- `render.yaml` 会自动配置 Node 服务、Singapore 区域、持久磁盘和自动部署
+- `railway.json` 会告诉 Railway 用 `npm start` 启动，并检查 `/api/health`
+- 绑定 Volume 后，服务会自动把排行榜写到 `RAILWAY_VOLUME_MOUNT_PATH/scores.json`
 
 ## 你要做的事
 
-1. 把整个目录推到一个 GitHub 仓库。
-2. 打开 Render Dashboard，选择 New -> Blueprint。
-3. 连接这个 GitHub 仓库。
-4. Render 会读取 `render.yaml`，确认创建 `public-2048-leaderboard`。
-5. 等部署完成，打开 Render 给你的 `https://...onrender.com` 地址。
+1. 打开 Railway 的 GitHub 新建页。
+2. 选择 GitHub 仓库 `sakurasong-yy/public-2048-leaderboard`。
+3. 选择 Deploy Now，等待构建完成。
+4. 在服务的 Settings -> Networking -> Public Networking 里点 Generate Domain。
+5. 打开 Railway 给你的 `https://...railway.app` 地址。
 
 ## 重要选择
 
-排行榜要长期保存，必须有持久存储。Render 的持久磁盘需要付费 Web Service；这个项目的 `render.yaml` 已经选了 `starter` 计划和 1GB 磁盘。
+排行榜要长期保存，必须给服务添加一个 Railway Volume。Volume 的 mount path 建议填 `/data`；代码会自动读取 Railway 提供的 `RAILWAY_VOLUME_MOUNT_PATH`，不需要你手动配置环境变量。
 
-如果你只想先免费试跑，可以临时把 `render.yaml` 里的 `plan: starter` 和整个 `disk:` 块删掉，但每次服务重启或重新部署后，排行榜数据可能丢失。
+如果你只想先试跑，不加 Volume 也能打开游戏，但每次服务重启或重新部署后，排行榜数据可能丢失。
 
 ## 本地验证
 

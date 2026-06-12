@@ -12,7 +12,10 @@ const HOST = process.env.HOST || "0.0.0.0";
 const SCORE_LIMIT = 200;
 const DEFAULT_LEADERBOARD_LIMIT = 10;
 const MAX_BODY_BYTES = 16 * 1024;
-const DATA_FILE = process.env.SCORES_FILE || path.join(ROOT, "data", "scores.json");
+const DEFAULT_DATA_FILE = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "scores.json")
+  : path.join(ROOT, "data", "scores.json");
+const DATA_FILE = process.env.SCORES_FILE || DEFAULT_DATA_FILE;
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
