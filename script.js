@@ -59,6 +59,7 @@
   let mergedTileIds;
   let touchStart;
   let leaderboardBusy;
+  let leaderboardApiAvailable;
 
   function createEmptyCells() {
     return Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => null));
@@ -409,7 +410,7 @@
   }
 
   function updateSubmitState() {
-    elements.submitScore.disabled = leaderboardBusy || score <= 0;
+    elements.submitScore.disabled = !leaderboardApiAvailable || leaderboardBusy || score <= 0;
   }
 
   function setLeaderboardStatus(message, isError) {
@@ -456,6 +457,8 @@
   }
 
   async function loadLeaderboard() {
+    leaderboardApiAvailable = true;
+    updateSubmitState();
     setLeaderboardStatus("Loading rankings...");
 
     try {
@@ -471,13 +474,20 @@
       renderLeaderboard(data.scores || []);
       setLeaderboardStatus("Live rankings ready.");
     } catch (error) {
+      leaderboardApiAvailable = false;
       renderLeaderboard([]);
-      setLeaderboardStatus("Start server.js to enable public rankings.", true);
+      updateSubmitState();
+      setLeaderboardStatus("GitHub Pages mode: scores stay on this device.", false);
     }
   }
 
   async function submitScore(event) {
     event.preventDefault();
+
+    if (!leaderboardApiAvailable) {
+      setLeaderboardStatus("GitHub Pages mode: scores stay on this device.");
+      return;
+    }
 
     const playerName = elements.playerName.value.trim();
     if (!playerName) {
