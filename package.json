@@ -1,0 +1,12 @@
+{
+  "name": "public-2048-leaderboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A shareable 2048 game with a tiny JSON-backed leaderboard.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

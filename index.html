@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2048</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="game-shell" aria-labelledby="game-title">
+      <header class="topbar">
+        <div class="title-block">
+          <h1 id="game-title">2048</h1>
+        </div>
+
+        <div class="score-controls" aria-label="游戏控制">
+          <div class="score-card" aria-label="当前得分">
+            <span>SCORE</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="score-card" aria-label="最高得分">
+            <span>BEST</span>
+            <strong id="best-score">0</strong>
+          </div>
+          <button class="icon-button" id="restart-button" type="button" aria-label="重新开始" title="重新开始">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+              <path d="M20 4v6h-6" />
+            </svg>
+          </button>
+          <button class="icon-button" id="undo-button" type="button" aria-label="撤销一步" title="撤销一步">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 14 4 9l5-5" />
+              <path d="M4 9h9a7 7 0 1 1 0 14H8" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="status-row" aria-live="polite">
+        <div class="status-message">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 19V9" />
+            <path d="M10 19V5" />
+            <path d="M16 19v-8" />
+            <path d="M22 19H2" />
+          </svg>
+          <span id="status-text">Keep going!</span>
+        </div>
+        <div class="moves">
+          <span>MOVES</span>
+          <strong id="moves">0</strong>
+        </div>
+      </section>
+
+      <div class="play-area">
+        <section class="board-section" aria-label="2048 棋盘">
+          <div id="board" class="board" tabindex="0">
+            <div class="grid-cells" aria-hidden="true">
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+              <div class="grid-cell"></div>
+            </div>
+            <div id="tile-layer" class="tile-layer" aria-hidden="true"></div>
+            <div id="game-overlay" class="game-overlay is-hidden" role="dialog" aria-labelledby="overlay-title" aria-modal="true">
+              <div class="overlay-panel">
+                <h2 id="overlay-title">Game over</h2>
+                <p id="overlay-message">No more moves.</p>
+                <div class="overlay-actions">
+                  <button class="primary-button" id="overlay-primary" type="button">New game</button>
+                  <button class="ghost-button" id="overlay-secondary" type="button">Keep playing</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p id="board-state" class="sr-only" aria-live="polite"></p>
+        </section>
+
+        <aside class="leaderboard-panel" aria-labelledby="leaderboard-title">
+          <div class="leaderboard-heading">
+            <div>
+              <h2 id="leaderboard-title">Leaderboard</h2>
+              <p>Best score per name</p>
+            </div>
+            <button class="mini-icon-button" id="leaderboard-refresh" type="button" aria-label="刷新排行榜" title="刷新排行榜">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                <path d="M20 4v6h-6" />
+              </svg>
+            </button>
+          </div>
+
+          <form class="score-form" id="score-form">
+            <label class="sr-only" for="player-name">Player name</label>
+            <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="Your name" />
+            <button class="submit-score" id="submit-score-button" type="submit">Submit</button>
+          </form>
+
+          <ol class="leaderboard-list" id="leaderboard-list" aria-label="排行榜"></ol>
+          <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">Loading rankings...</p>
+        </aside>
+      </div>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
