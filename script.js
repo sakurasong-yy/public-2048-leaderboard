@@ -59,6 +59,8 @@
   let mergedTileIds;
   let touchStart;
   let leaderboardBusy;
+  let lastSubmittedScore;
+  let lastSubmittedName;
 
   function createEmptyCells() {
     return Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => null));
@@ -118,6 +120,8 @@
     keepPlaying = false;
     newTileId = null;
     mergedTileIds = new Set();
+    lastSubmittedScore = 0;
+    lastSubmittedName = "";
 
     for (let i = 0; i < START_TILES; i += 1) {
       addRandomTile();
@@ -238,6 +242,12 @@
     }
 
     render(statusForMove());
+
+    if (over) {
+      maybeAutoSubmitScore("finished");
+    } else if (won && !keepPlaying) {
+      maybeAutoSubmitScore("win");
+    }
   }
 
   function prepareTiles() {
@@ -409,7 +419,9 @@
   }
 
   function updateSubmitState() {
-    elements.submitScore.disabled = leaderboardBusy || score <= 0;
+    const hasName = Boolean(currentPlayerName());
+    elements.submitScore.disabled = leaderboardBusy || !hasName || score <= 0 || moves <= 0;
+    elements.submitScore.textContent = leaderboardBusy ? "保存中" : "保存成绩";
   }
 
   function setLeaderboardStatus(message, isError) {
@@ -423,7 +435,7 @@
     if (!scores.length) {
       const empty = document.createElement("li");
       empty.className = "leaderboard-empty";
-      empty.textContent = "No scores yet.";
+      empty.textContent = "还没有成绩。";
       elements.leaderboardList.append(empty);
       return;
     }
@@ -443,7 +455,7 @@
       name.textContent = entry.name;
 
       const meta = document.createElement("span");
-      meta.textContent = `${entry.moves} moves · ${entry.maxTile} tile`;
+      meta.textContent = `${entry.moves} 步 · 最大 ${entry.maxTile}`;
 
       const entryScore = document.createElement("strong");
       entryScore.className = "leaderboard-score";
@@ -456,7 +468,7 @@
   }
 
   async function loadLeaderboard() {
-    setLeaderboardStatus("Loading rankings...");
+    setLeaderboardStatus("正在加载排行榜...");
 
     try {
       const response = await fetch(`/api/leaderboard?limit=${LEADERBOARD_LIMIT}`, {
@@ -469,26 +481,65 @@
 
       const data = await response.json();
       renderLeaderboard(data.scores || []);
-      setLeaderboardStatus("Live rankings ready.");
+      if (currentPlayerName()) {
+        setLeaderboardStatus("已准备好自动记录成绩。");
+      } else {
+        setLeaderboardStatus("输入名字后，游戏结束会自动上榜。");
+      }
     } catch (error) {
       renderLeaderboard([]);
-      setLeaderboardStatus("Start server.js to enable public rankings.", true);
+      setLeaderboardStatus("排行榜服务暂时不可用。", true);
     }
   }
 
-  async function submitScore(event) {
-    event.preventDefault();
-
+  function currentPlayerName() {
     const playerName = elements.playerName.value.trim();
+    return playerName.replace(/\s+/g, " ");
+  }
+
+  function shouldSkipDuplicateSubmit(playerName) {
+    return playerName === lastSubmittedName && score <= lastSubmittedScore;
+  }
+
+  function maybeAutoSubmitScore(reason) {
+    const playerName = currentPlayerName();
+    if (leaderboardBusy || score <= 0 || moves <= 0 || shouldSkipDuplicateSubmit(playerName)) {
+      return;
+    }
+
+    if (!playerName) {
+      if (reason === "finished" || reason === "win") {
+        setLeaderboardStatus("输入名字后点保存成绩，即可上榜。");
+      }
+      return;
+    }
+
+    submitCurrentScore(reason);
+  }
+
+  async function submitCurrentScore(reason) {
+    const playerName = currentPlayerName();
     if (!playerName) {
       elements.playerName.focus();
-      setLeaderboardStatus("Add a name before submitting.", true);
+      setLeaderboardStatus("请先输入名字。", true);
+      updateSubmitState();
+      return;
+    }
+
+    if (score <= 0 || moves <= 0) {
+      setLeaderboardStatus("开始游戏后再保存成绩。");
+      updateSubmitState();
+      return;
+    }
+
+    if (shouldSkipDuplicateSubmit(playerName)) {
+      setLeaderboardStatus("当前成绩已经保存。");
       return;
     }
 
     leaderboardBusy = true;
     updateSubmitState();
-    setLeaderboardStatus("Submitting score...");
+    setLeaderboardStatus(reason === "manual" ? "正在保存成绩..." : "正在自动记录成绩...");
 
     try {
       const response = await fetch("/api/scores", {
@@ -514,19 +565,44 @@
 
       savePlayerName(data.entry.name);
       elements.playerName.value = data.entry.name;
+      lastSubmittedName = data.entry.name;
+      lastSubmittedScore = Math.max(lastSubmittedScore, score);
       renderLeaderboard(data.scores || []);
 
       if (data.accepted) {
-        setLeaderboardStatus(`Recorded at #${data.rank}.`);
+        setLeaderboardStatus(`已记录 ${data.entry.score} 分，当前第 ${data.rank} 名。`);
       } else {
-        setLeaderboardStatus(`Best existing score is still #${data.rank}.`);
+        setLeaderboardStatus(`没有超过历史最好成绩，仍是第 ${data.rank} 名。`);
       }
     } catch (error) {
-      setLeaderboardStatus(error.message || "Could not submit score.", true);
+      setLeaderboardStatus(error.message || "成绩保存失败。", true);
     } finally {
       leaderboardBusy = false;
       updateSubmitState();
     }
+  }
+
+  function submitScore(event) {
+    event.preventDefault();
+    submitCurrentScore("manual");
+  }
+
+  function handlePlayerNameInput() {
+    const playerName = currentPlayerName();
+    savePlayerName(playerName);
+    updateSubmitState();
+
+    if (!playerName) {
+      setLeaderboardStatus("输入名字后，游戏结束会自动上榜。");
+      return;
+    }
+
+    if (over && score > 0 && moves > 0) {
+      setLeaderboardStatus("名字已保存，点保存成绩即可上榜。");
+      return;
+    }
+
+    setLeaderboardStatus("名字已保存，游戏结束会自动记录。");
   }
 
   function handleKeydown(event) {
@@ -616,11 +692,14 @@
     elements.overlayPrimary.addEventListener("click", handleOverlayPrimary);
     elements.overlaySecondary.addEventListener("click", handleOverlaySecondary);
     elements.scoreForm.addEventListener("submit", submitScore);
+    elements.playerName.addEventListener("input", handlePlayerNameInput);
     elements.refreshLeaderboard.addEventListener("click", loadLeaderboard);
   }
 
   bestScore = loadBestScore();
   leaderboardBusy = false;
+  lastSubmittedScore = 0;
+  lastSubmittedName = "";
   elements.playerName.value = loadPlayerName();
   bindEvents();
   newGame();

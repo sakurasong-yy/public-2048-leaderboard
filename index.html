@@ -92,8 +92,8 @@
         <aside class="leaderboard-panel" aria-labelledby="leaderboard-title">
           <div class="leaderboard-heading">
             <div>
-              <h2 id="leaderboard-title">Leaderboard</h2>
-              <p>Best score per name</p>
+              <h2 id="leaderboard-title">排行榜</h2>
+              <p>每个名字保留最高分</p>
             </div>
             <button class="mini-icon-button" id="leaderboard-refresh" type="button" aria-label="刷新排行榜" title="刷新排行榜">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -104,13 +104,13 @@
           </div>
 
           <form class="score-form" id="score-form">
-            <label class="sr-only" for="player-name">Player name</label>
-            <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="Your name" />
-            <button class="submit-score" id="submit-score-button" type="submit">Submit</button>
+            <label class="sr-only" for="player-name">玩家名字</label>
+            <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="输入名字" />
+            <button class="submit-score" id="submit-score-button" type="submit">保存成绩</button>
           </form>
 
           <ol class="leaderboard-list" id="leaderboard-list" aria-label="排行榜"></ol>
-          <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">Loading rankings...</p>
+          <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载排行榜...</p>
         </aside>
       </div>
     </main>
