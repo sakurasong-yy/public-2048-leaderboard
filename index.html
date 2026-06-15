@@ -3,117 +3,189 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>2048</title>
+    <title>璀璨宝石商会</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23120d0a'/%3E%3Cpath d='M32 7 51 18 47 46 32 57 17 46 13 18Z' fill='%23f2c75a'/%3E%3Cpath d='M20 22h24L32 49Z' fill='%232fa45f'/%3E%3Cpath d='M20 22 32 49 44 22' fill='none' stroke='%23fff0b8' stroke-width='3'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="game-shell" aria-labelledby="game-title">
+    <main class="app-shell" aria-labelledby="game-title">
       <header class="topbar">
-        <div class="title-block">
-          <h1 id="game-title">2048</h1>
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M24 4 42 13v12c0 11-8 17-18 20C14 42 6 36 6 25V13L24 4Z" />
+              <path d="M15 17h18l-4 19H19l-4-19Z" />
+              <path d="m17 17 7 19 7-19M24 17v19" />
+            </svg>
+          </div>
+          <div>
+            <h1 id="game-title">璀璨宝石商会</h1>
+            <p>Gem Guild</p>
+          </div>
         </div>
 
-        <div class="score-controls" aria-label="游戏控制">
-          <div class="score-card" aria-label="当前得分">
-            <span>SCORE</span>
-            <strong id="score">0</strong>
-          </div>
-          <div class="score-card" aria-label="最高得分">
-            <span>BEST</span>
-            <strong id="best-score">0</strong>
-          </div>
-          <button class="icon-button" id="restart-button" type="button" aria-label="重新开始" title="重新开始">
+        <div class="turn-banner" aria-live="polite">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 21h18" />
+            <path d="M6 21 5 9l5 4 4-8 4 8 5-4-1 12" />
+          </svg>
+          <span id="turn-label">你的回合</span>
+        </div>
+
+        <div class="top-actions" aria-label="游戏控制">
+          <button class="icon-button" id="new-game-button" type="button" aria-label="新游戏" title="新游戏">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 12a8 8 0 1 1-2.34-5.66" />
               <path d="M20 4v6h-6" />
             </svg>
           </button>
-          <button class="icon-button" id="undo-button" type="button" aria-label="撤销一步" title="撤销一步">
+          <button class="icon-button" id="rules-button" type="button" aria-label="规则" title="规则">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9 14 4 9l5-5" />
-              <path d="M4 9h9a7 7 0 1 1 0 14H8" />
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
             </svg>
           </button>
         </div>
       </header>
 
-      <section class="status-row" aria-live="polite">
-        <div class="status-message">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 19V9" />
-            <path d="M10 19V5" />
-            <path d="M16 19v-8" />
-            <path d="M22 19H2" />
-          </svg>
-          <span id="status-text">Keep going!</span>
-        </div>
-        <div class="moves">
-          <span>MOVES</span>
-          <strong id="moves">0</strong>
-        </div>
-      </section>
-
-      <div class="play-area">
-        <section class="board-section" aria-label="2048 棋盘">
-          <div id="board" class="board" tabindex="0">
-            <div class="grid-cells" aria-hidden="true">
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-              <div class="grid-cell"></div>
-            </div>
-            <div id="tile-layer" class="tile-layer" aria-hidden="true"></div>
-            <div id="game-overlay" class="game-overlay is-hidden" role="dialog" aria-labelledby="overlay-title" aria-modal="true">
-              <div class="overlay-panel">
-                <h2 id="overlay-title">Game over</h2>
-                <p id="overlay-message">No more moves.</p>
-                <div class="overlay-actions">
-                  <button class="primary-button" id="overlay-primary" type="button">New game</button>
-                  <button class="ghost-button" id="overlay-secondary" type="button">Keep playing</button>
-                </div>
-              </div>
-            </div>
+      <section class="game-table" aria-label="桌游区域">
+        <aside class="bank-panel panel" aria-labelledby="bank-title">
+          <div class="panel-heading">
+            <h2 id="bank-title">宝石库</h2>
+            <span id="take-limit">0 / 3</span>
           </div>
-          <p id="board-state" class="sr-only" aria-live="polite"></p>
+          <div class="token-bank" id="token-bank"></div>
+          <div class="selection-hint" id="selection-hint">选择 3 种不同宝石，或在库存足够时选择 2 枚同色。</div>
+        </aside>
+
+        <section class="market-panel" aria-label="市场">
+          <section class="noble-row panel" aria-labelledby="noble-title">
+            <div class="lane-label">
+              <span id="noble-title">贵族</span>
+            </div>
+            <div class="noble-list" id="noble-list"></div>
+          </section>
+
+          <section class="market-lanes panel" aria-label="发展卡市场">
+            <div class="tier" data-tier="3">
+              <div class="lane-label"><span>III</span></div>
+              <div class="card-row" id="tier-3"></div>
+            </div>
+            <div class="tier" data-tier="2">
+              <div class="lane-label"><span>II</span></div>
+              <div class="card-row" id="tier-2"></div>
+            </div>
+            <div class="tier" data-tier="1">
+              <div class="lane-label"><span>I</span></div>
+              <div class="card-row" id="tier-1"></div>
+            </div>
+          </section>
         </section>
 
-        <aside class="leaderboard-panel" aria-labelledby="leaderboard-title">
-          <div class="leaderboard-heading">
-            <div>
-              <h2 id="leaderboard-title">排行榜</h2>
-              <p>每个名字保留最高分</p>
+        <aside class="side-panel" aria-label="玩家信息与行动">
+          <section class="player-panel panel is-current" id="human-panel" aria-labelledby="human-title">
+            <div class="player-heading">
+              <div>
+                <h2 id="human-title">你</h2>
+                <span id="round-label">回合 1</span>
+              </div>
+              <strong id="human-prestige">0</strong>
             </div>
-            <button class="mini-icon-button" id="leaderboard-refresh" type="button" aria-label="刷新排行榜" title="刷新排行榜">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-                <path d="M20 4v6h-6" />
-              </svg>
-            </button>
-          </div>
+            <div class="mini-gems" id="human-tokens"></div>
+            <div class="bonus-strip" id="human-bonuses"></div>
+          </section>
 
-          <form class="score-form" id="score-form">
-            <label class="sr-only" for="player-name">玩家名字</label>
-            <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="输入名字" />
-            <button class="submit-score" id="submit-score-button" type="submit">保存成绩</button>
-          </form>
+          <section class="opponent-stack" id="opponent-stack" aria-label="AI 对手"></section>
 
-          <ol class="leaderboard-list" id="leaderboard-list" aria-label="排行榜"></ol>
-          <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载排行榜...</p>
+          <section class="action-panel panel" aria-labelledby="action-title">
+            <div class="panel-heading">
+              <h2 id="action-title">行动</h2>
+              <span id="action-count">可执行 1 个行动</span>
+            </div>
+            <p class="action-status" id="action-status">选择卡牌或宝石。</p>
+            <div class="action-grid">
+              <button class="action-button buy" id="buy-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6h15l-2 9H8L6 6Z" />
+                  <path d="M6 6 5 3H2" />
+                  <circle cx="9" cy="20" r="1.5" />
+                  <circle cx="18" cy="20" r="1.5" />
+                </svg>
+                买入
+              </button>
+              <button class="action-button reserve" id="reserve-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 3h12v18l-6-4-6 4V3Z" />
+                </svg>
+                预留
+              </button>
+              <button class="action-button take" id="take-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 11V5a2 2 0 1 1 4 0v5" />
+                  <path d="M12 10V4a2 2 0 1 1 4 0v8" />
+                  <path d="M16 12V7a2 2 0 1 1 4 0v7c0 4-3 7-7 7h-1a8 8 0 0 1-8-8v-2a2 2 0 1 1 4 0v1" />
+                </svg>
+                拿宝石
+              </button>
+              <button class="action-button end" id="pass-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 15s2-2 5-2 5 2 8 2 3-1 3-1V5s0 1-3 1-5-2-8-2-5 2-5 2v13" />
+                </svg>
+                结束回合
+              </button>
+            </div>
+          </section>
+
+          <section class="leaderboard-panel panel" aria-labelledby="leaderboard-title">
+            <div class="panel-heading">
+              <h2 id="leaderboard-title">胜场榜</h2>
+              <button class="mini-icon-button" id="leaderboard-refresh" type="button" aria-label="刷新胜场榜" title="刷新胜场榜">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                  <path d="M20 4v6h-6" />
+                </svg>
+              </button>
+            </div>
+            <form class="score-form" id="score-form">
+              <label class="sr-only" for="player-name">玩家名字</label>
+              <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="输入名字" />
+              <button class="submit-score" id="submit-score-button" type="submit">保存</button>
+            </form>
+            <ol class="leaderboard-list" id="leaderboard-list" aria-label="胜场榜"></ol>
+            <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载胜场榜...</p>
+          </section>
+
+          <section class="log-panel panel" aria-labelledby="log-title">
+            <div class="panel-heading">
+              <h2 id="log-title">回合记录</h2>
+            </div>
+            <ol class="turn-log" id="turn-log"></ol>
+          </section>
         </aside>
-      </div>
+      </section>
+
+      <section class="bottom-board panel" aria-label="你的卡牌">
+        <div class="reserved-zone">
+          <div class="zone-title">预留区 <span id="reserve-count">(0/3)</span></div>
+          <div class="reserved-list" id="reserved-list"></div>
+        </div>
+        <div class="earned-zone">
+          <div class="zone-title">已获得的奖励</div>
+          <div class="earned-summary" id="earned-summary"></div>
+        </div>
+      </section>
     </main>
+
+    <div class="modal is-hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-panel">
+        <h2 id="modal-title">规则</h2>
+        <div id="modal-body"></div>
+        <div class="modal-actions">
+          <button class="primary-button" id="modal-primary" type="button">知道了</button>
+          <button class="ghost-button" id="modal-secondary" type="button">再来一局</button>
+        </div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>

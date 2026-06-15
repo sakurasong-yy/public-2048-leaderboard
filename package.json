@@ -1,8 +1,8 @@
 {
-  "name": "public-2048-leaderboard",
+  "name": "gem-guild-board-game",
   "version": "1.0.0",
   "private": true,
-  "description": "A shareable 2048 game with a tiny JSON-backed leaderboard.",
+  "description": "A visual gem-collecting tabletop board game with a tiny JSON-backed victory leaderboard.",
   "scripts": {
     "start": "node server.js"
   },
