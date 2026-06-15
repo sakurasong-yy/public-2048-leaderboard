@@ -916,6 +916,11 @@ button:disabled {
   padding: 8px;
 }
 
+.opponent-card.is-current {
+  border-color: rgba(94, 204, 112, 0.58);
+  box-shadow: 0 0 0 1px rgba(94, 204, 112, 0.22);
+}
+
 .opponent-top {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto;
@@ -1047,7 +1052,38 @@ button:disabled {
   margin-top: 12px;
 }
 
-.score-form input {
+.seat-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seat-toggle {
+  min-height: 38px;
+  border: 1px solid rgba(240, 207, 128, 0.34);
+  border-radius: var(--radius);
+  background: rgba(8, 7, 6, 0.42);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seat-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--gold);
+}
+
+.score-form input,
+.seat-form input[type="text"],
+#second-player-name {
   min-width: 0;
   height: 38px;
   border: 1px solid rgba(240, 207, 128, 0.34);
@@ -1061,13 +1097,20 @@ button:disabled {
   outline: none;
 }
 
-.score-form input:focus {
+.score-form input:focus,
+#second-player-name:focus {
   border-color: var(--line-strong);
   box-shadow: 0 0 0 3px rgba(242, 199, 90, 0.14);
 }
 
-.score-form input::placeholder {
+.score-form input::placeholder,
+#second-player-name::placeholder {
   color: #81745d;
+}
+
+#second-player-name:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
 }
 
 .submit-score {
@@ -1501,7 +1544,8 @@ button:disabled {
     font-size: 1.28rem;
   }
 
-  .score-form {
+  .score-form,
+  .seat-form {
     grid-template-columns: 1fr;
   }
 }

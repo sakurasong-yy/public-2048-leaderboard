@@ -7,7 +7,9 @@
   const LEADERBOARD_LIMIT = 5;
   const MATCH_LIMIT = 5;
   const PLAYER_KEY = "gem-guild-player";
+  const SECOND_PLAYER_KEY = "gem-guild-player-two";
   const PLAYER_COUNT_KEY = "gem-guild-player-count";
+  const SECOND_HUMAN_KEY = "gem-guild-second-human";
   const GUEST_KEY = "gem-guild-guest-id";
   const AI_NAMES = ["AI 维多利亚", "AI 奥古斯都", "AI 伊莎贝拉"];
 
@@ -82,6 +84,8 @@
     leaderboardRefresh: document.querySelector("#leaderboard-refresh"),
     scoreForm: document.querySelector("#score-form"),
     playerName: document.querySelector("#player-name"),
+    secondPlayerName: document.querySelector("#second-player-name"),
+    secondHumanToggle: document.querySelector("#second-human-toggle"),
     submitScore: document.querySelector("#submit-score-button"),
     matchList: document.querySelector("#match-list"),
     matchStatus: document.querySelector("#match-status"),
@@ -196,9 +200,18 @@
 
   function makePlayers(count) {
     const players = [makePlayer("human", displayPlayerName(), true)];
-    for (let index = 0; index < count - 1; index += 1) {
-      players.push(makePlayer(`ai-${index + 1}`, AI_NAMES[index], false));
+    let aiIndex = 0;
+
+    if (count >= 2 && secondHumanEnabled()) {
+      players.push(makePlayer("human-2", displaySecondPlayerName(), true));
     }
+
+    while (players.length < count) {
+      const aiName = AI_NAMES[aiIndex] || `AI ${aiIndex + 1}`;
+      players.push(makePlayer(`ai-${aiIndex + 1}`, aiName, false));
+      aiIndex += 1;
+    }
+
     return players;
   }
 
@@ -253,10 +266,15 @@
       }
     });
 
-    addLog(`${playerCount} 人局开始。先达到 15 威望即可赢得商会席位。`, {
-      type: "start",
-      playerCount
-    });
+    const humanSeats = state.players.filter((player) => player.isHuman).map((player) => player.name);
+    const aiSeatCount = state.players.length - humanSeats.length;
+    addLog(
+      `${playerCount} 人局开始。${humanSeats.join("、")} 真人入座${aiSeatCount > 0 ? `，${aiSeatCount} 位 AI 兜底` : ""}。先达到 15 威望即可赢得商会席位。`,
+      {
+        type: "start",
+        playerCount
+      }
+    );
     closeModal();
     render();
   }
@@ -266,7 +284,19 @@
   }
 
   function human() {
-    return state.players[0];
+    return state.players.find((player) => player.id === "human") || state.players[0];
+  }
+
+  function activeHuman() {
+    return currentPlayer().isHuman ? currentPlayer() : human();
+  }
+
+  function humanPlayers() {
+    return state.players.filter((player) => player.isHuman);
+  }
+
+  function focusedPlayer() {
+    return currentPlayer().isHuman ? currentPlayer() : human();
   }
 
   function isHumanTurn() {
@@ -336,9 +366,10 @@
 
   function selectedCardRecord() {
     if (!state.selectedCard) return null;
+    const player = activeHuman();
 
     if (state.selectedCard.source === "reserved") {
-      const card = human().reserved.find((item) => item.id === state.selectedCard.id);
+      const card = player.reserved.find((item) => item.id === state.selectedCard.id);
       return card ? { card, source: "reserved" } : null;
     }
 
@@ -458,7 +489,7 @@
     if (state.bank[gemId] <= state.selectedTake[gemId]) return false;
 
     const selectedTotal = tokenTotal(state.selectedTake);
-    const capacity = Math.min(3, MAX_TOKENS - tokenTotal(human().tokens));
+    const capacity = Math.min(3, MAX_TOKENS - tokenTotal(activeHuman().tokens));
     if (capacity <= 0 || selectedTotal >= capacity) return false;
 
     const selectedColors = gemIds.filter((id) => state.selectedTake[id] > 0);
@@ -488,7 +519,7 @@
 
   function isTakeSelectionLegal() {
     const total = tokenTotal(state.selectedTake);
-    const capacity = MAX_TOKENS - tokenTotal(human().tokens);
+    const capacity = MAX_TOKENS - tokenTotal(activeHuman().tokens);
     const selectedColors = gemIds.filter((id) => state.selectedTake[id] > 0);
 
     if (total < 1 || total > 3 || total > capacity) return false;
@@ -502,7 +533,7 @@
 
   function takeSelectedGems() {
     if (!isTakeSelectionLegal()) return false;
-    takeGems(human(), state.selectedTake);
+    takeGems(activeHuman(), state.selectedTake);
     return true;
   }
 
@@ -582,6 +613,7 @@
       .map((player) => ({
         id: player.id,
         name: player.name,
+        isHuman: player.isHuman,
         prestige: player.prestige,
         cards: player.cards.length,
         reserved: player.reserved.length,
@@ -601,8 +633,8 @@
     state.busy = false;
     state.winner = standings()[0];
 
-    const won = state.winner.id === "human";
-    addLog(won ? "<strong>你赢得了宝石商会席位。</strong>" : `<strong>${state.winner.name}</strong> 赢得了商会席位。`, {
+    const won = Boolean(state.winner.isHuman);
+    addLog(`<strong>${state.winner.name}</strong> 赢得了宝石商会席位。`, {
       type: "finish",
       playerId: state.winner.id,
       playerName: state.winner.name,
@@ -616,7 +648,7 @@
     submitCurrentScore();
     submitMatchRecord();
     showModal({
-      title: won ? "你赢了" : "牌局结束",
+      title: won ? `${state.winner.name} 赢了` : "牌局结束",
       body: `<p>${state.winner.name} 以 ${state.winner.prestige} 威望赢得 ${state.playerCount} 人局。</p><p>本局胜负与完整过程会自动写入牌局档案。</p>`,
       primaryText: "再来一局",
       secondaryText: "关闭",
@@ -733,14 +765,14 @@
   function handleBuy() {
     if (!isHumanTurn()) return;
     const record = selectedCardRecord();
-    if (!record || !buyCard(human(), record)) return;
+    if (!record || !buyCard(activeHuman(), record)) return;
     finishTurn();
   }
 
   function handleReserve() {
     if (!isHumanTurn()) return;
     const record = selectedCardRecord();
-    if (!record || !reserveCard(human(), record)) return;
+    if (!record || !reserveCard(activeHuman(), record)) return;
     finishTurn();
   }
 
@@ -759,10 +791,11 @@
       return;
     }
 
-    addLog("<strong>你</strong> 结束回合。", {
+    const player = activeHuman();
+    addLog(`<strong>${player.name}</strong> 结束回合。`, {
       type: "pass",
-      playerId: human().id,
-      playerName: human().name
+      playerId: player.id,
+      playerName: player.name
     });
     finishTurn();
   }
@@ -814,14 +847,15 @@
     });
 
     const selectedTotal = tokenTotal(state.selectedTake);
-    const capacity = Math.max(0, Math.min(3, MAX_TOKENS - tokenTotal(human().tokens)));
+    const capacity = Math.max(0, Math.min(3, MAX_TOKENS - tokenTotal(activeHuman().tokens)));
     elements.takeLimit.textContent = `${selectedTotal} / ${capacity}`;
     elements.selectionHint.textContent = selectionText();
   }
 
   function selectionText() {
     if (!isHumanTurn()) return state.gameOver ? "牌局已经结束。" : "等待 AI 行动。";
-    if (tokenTotal(human().tokens) >= MAX_TOKENS) return "你的宝石已达 10 枚上限，请先买入卡牌。";
+    const player = activeHuman();
+    if (tokenTotal(player.tokens) >= MAX_TOKENS) return `${player.name} 的宝石已达 10 枚上限，请先买入卡牌。`;
 
     const selected = gemIds.filter((id) => state.selectedTake[id] > 0);
     if (!selected.length) return "选择 3 种不同宝石，或在库存至少 4 枚时选择 2 枚同色。";
@@ -854,7 +888,7 @@
   }
 
   function createCardNode(card, source, tier) {
-    const player = human();
+    const player = activeHuman();
     const node = document.createElement("button");
     node.type = "button";
     node.className = source === "reserved" ? "reserved-card" : "market-card";
@@ -947,12 +981,18 @@
     });
   }
 
+  function renderSeatControls() {
+    const enabled = secondHumanEnabled();
+    elements.secondPlayerName.disabled = !enabled;
+    elements.secondPlayerName.setAttribute("aria-disabled", String(!enabled));
+  }
+
   function renderPlayerSummary() {
-    const player = human();
-    player.name = displayPlayerName();
+    syncHumanNames();
+    const player = focusedPlayer();
     elements.humanTitle.textContent = player.name;
     elements.humanPrestige.textContent = String(player.prestige);
-    elements.roundLabel.textContent = `${state.playerCount} 人局 · 回合 ${state.round}`;
+    elements.roundLabel.textContent = `${state.playerCount} 人局 · 回合 ${state.round}${player.isHuman ? " · 真人" : ""}`;
     elements.humanTokens.replaceChildren(...allGems.map((gem) => renderGemToken(gem, player.tokens[gem.id])));
     elements.humanBonuses.replaceChildren(...gems.map((gem) => renderGemToken(gem, player.bonuses[gem.id], "bonus-chip")));
     elements.reserveCount.textContent = `(${player.reserved.length}/${RESERVE_LIMIT})`;
@@ -979,9 +1019,11 @@
   function renderOpponents() {
     elements.opponentStack.replaceChildren();
 
-    state.players.slice(1).forEach((player) => {
+    const focus = focusedPlayer();
+    state.players.filter((player) => player.id !== focus.id).forEach((player) => {
       const card = document.createElement("article");
       card.className = "opponent-card";
+      if (player.id === currentPlayer().id) card.classList.add("is-current");
 
       const top = document.createElement("div");
       top.className = "opponent-top";
@@ -995,7 +1037,7 @@
       const strong = document.createElement("strong");
       strong.textContent = player.name;
       const meta = document.createElement("span");
-      meta.textContent = `${player.cards.length} 张卡 · ${player.reserved.length} 预留`;
+      meta.textContent = `${player.isHuman ? "真人" : "AI"} · ${player.cards.length} 张卡 · ${player.reserved.length} 预留`;
       name.append(strong, meta);
 
       const score = document.createElement("strong");
@@ -1015,24 +1057,25 @@
 
   function renderActions() {
     const record = selectedCardRecord();
-    const canBuy = isHumanTurn() && record && canAfford(human(), record.card);
+    const player = activeHuman();
+    const canBuy = isHumanTurn() && record && canAfford(player, record.card);
     const canReserveSelected =
       isHumanTurn() &&
       record &&
       record.source === "market" &&
-      human().reserved.length < RESERVE_LIMIT;
+      player.reserved.length < RESERVE_LIMIT;
     const canTake = isHumanTurn() && isTakeSelectionLegal();
     const hasSelection = Boolean(record) || tokenTotal(state.selectedTake) > 0;
 
-    elements.turnLabel.textContent = state.gameOver ? "牌局结束" : currentPlayer().isHuman ? "你的回合" : `${currentPlayer().name} 行动中`;
-    elements.actionCount.textContent = isHumanTurn() ? "可执行 1 个行动" : state.gameOver ? "已结算" : "AI 思考中";
+    elements.turnLabel.textContent = state.gameOver ? "牌局结束" : currentPlayer().isHuman ? `${currentPlayer().name} 的回合` : `${currentPlayer().name} 行动中`;
+    elements.actionCount.textContent = isHumanTurn() ? "真人操作" : state.gameOver ? "已结算" : "AI 思考中";
     elements.buy.disabled = !canBuy;
     elements.reserve.disabled = !canReserveSelected;
     elements.take.disabled = !canTake;
     elements.pass.disabled = !isHumanTurn();
 
     if (record) {
-      const affordable = canAfford(human(), record.card);
+      const affordable = canAfford(player, record.card);
       elements.actionStatus.textContent = `${record.card.name}：${record.card.points} 威望，奖励 ${gemById(record.card.bonus).label}。${affordable ? "可以买入。" : "宝石不足，可先拿宝石或预留。"}`;
     } else if (tokenTotal(state.selectedTake) > 0) {
       elements.actionStatus.textContent = isTakeSelectionLegal() ? "这组宝石可以拿取。" : "当前选择不符合拿宝石规则。";
@@ -1041,7 +1084,7 @@
     } else if (!currentPlayer().isHuman) {
       elements.actionStatus.textContent = "AI 正在评估市场。";
     } else {
-      elements.actionStatus.textContent = "选择卡牌或宝石。达到 15 威望即可获胜。";
+      elements.actionStatus.textContent = `${player.name} 选择卡牌或宝石。达到 15 威望即可获胜。`;
     }
 
     elements.pass.classList.toggle("has-selection", hasSelection);
@@ -1058,6 +1101,7 @@
 
   function render() {
     renderModeTabs();
+    renderSeatControls();
     renderBank();
     renderNobles();
     renderMarket();
@@ -1073,7 +1117,7 @@
       title: "规则",
       body: `
         <ul>
-          <li>开局前可选择 2、3、4 人局；其余席位由 AI 自动行动。</li>
+          <li>开局前可选择 2、3、4 人局；开启 2 号真人时，两位真人轮流操作，其余席位由 AI 兜底。</li>
           <li>未输入名字也能以游客身份游玩，每局胜负和过程会自动写入牌局档案。</li>
           <li>每回合只能执行 1 个行动：买入、预留、拿宝石或结束回合。</li>
           <li>拿宝石可以拿 3 种不同颜色，或在库存至少 4 枚时拿 2 枚同色。</li>
@@ -1120,6 +1164,39 @@
     }
   }
 
+  function loadSecondPlayerName() {
+    try {
+      return localStorage.getItem(SECOND_PLAYER_KEY) || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function saveSecondPlayerName(name) {
+    try {
+      localStorage.setItem(SECOND_PLAYER_KEY, name);
+    } catch (error) {
+      // Local storage is optional.
+    }
+  }
+
+  function loadSecondHumanEnabled() {
+    try {
+      const saved = localStorage.getItem(SECOND_HUMAN_KEY);
+      return saved === null ? true : saved === "true";
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function saveSecondHumanEnabled(enabled) {
+    try {
+      localStorage.setItem(SECOND_HUMAN_KEY, String(enabled));
+    } catch (error) {
+      // Local storage is optional.
+    }
+  }
+
   function loadGuestId() {
     try {
       const existing = localStorage.getItem(GUEST_KEY);
@@ -1153,6 +1230,14 @@
     return elements.playerName.value.trim().replace(/\s+/g, " ");
   }
 
+  function normalizedSecondPlayerName() {
+    return elements.secondPlayerName.value.trim().replace(/\s+/g, " ");
+  }
+
+  function secondHumanEnabled() {
+    return Boolean(elements.secondHumanToggle.checked);
+  }
+
   function guestDisplayName() {
     const guestId = state ? state.guestId : loadGuestId();
     return `游客 ${guestId.replace(/^guest-/, "")}`;
@@ -1162,11 +1247,33 @@
     return normalizedPlayerName() || guestDisplayName();
   }
 
+  function displaySecondPlayerName() {
+    return normalizedSecondPlayerName() || "游客 2";
+  }
+
+  function syncHumanNames() {
+    if (!state) return;
+    const primary = state.players.find((player) => player.id === "human");
+    const secondary = state.players.find((player) => player.id === "human-2");
+    if (primary) primary.name = displayPlayerName();
+    if (secondary) secondary.name = displaySecondPlayerName();
+  }
+
+  function scorePlayerForRecord() {
+    if (state && state.winner && state.winner.isHuman) return state.winner;
+    return human();
+  }
+
+  function scoreCardCount(player) {
+    return Array.isArray(player.cards) ? player.cards.length : player.cards || 0;
+  }
+
   function updateSubmitState() {
-    const prestige = state ? human().prestige : 0;
-    const duplicate = state && displayPlayerName() === state.lastSubmittedName && prestige <= state.lastSubmittedPrestige;
+    const scorePlayer = state ? scorePlayerForRecord() : null;
+    const prestige = scorePlayer ? scorePlayer.prestige : 0;
+    const duplicate = state && scorePlayer && scorePlayer.name === state.lastSubmittedName && prestige <= state.lastSubmittedPrestige;
     elements.submitScore.disabled = !state || !state.gameOver || duplicate;
-    elements.submitScore.textContent = normalizedPlayerName() ? "保存" : "游客";
+    elements.submitScore.textContent = state && state.winner && state.winner.isHuman ? "胜者" : "保存";
   }
 
   function renderLeaderboard(scores) {
@@ -1227,9 +1334,11 @@
     if (event) event.preventDefault();
     if (!state.gameOver) return;
 
-    const typedName = normalizedPlayerName();
-    const name = displayPlayerName();
-    if (typedName) savePlayerName(typedName);
+    syncHumanNames();
+    const scorePlayer = scorePlayerForRecord();
+    const name = scorePlayer.name;
+    if (scorePlayer.id === "human" && normalizedPlayerName()) savePlayerName(normalizedPlayerName());
+    if (scorePlayer.id === "human-2" && normalizedSecondPlayerName()) saveSecondPlayerName(normalizedSecondPlayerName());
 
     elements.submitScore.disabled = true;
     elements.leaderboardStatus.textContent = "正在保存...";
@@ -1243,10 +1352,10 @@
         },
         body: JSON.stringify({
           name,
-          prestige: human().prestige,
+          prestige: scorePlayer.prestige,
           rounds: state.round,
-          cards: human().cards.length,
-          won: state.winner && state.winner.id === "human"
+          cards: scoreCardCount(scorePlayer),
+          won: state.winner && state.winner.id === scorePlayer.id
         })
       });
 
@@ -1257,7 +1366,7 @@
 
       const data = await response.json();
       state.lastSubmittedName = name;
-      state.lastSubmittedPrestige = human().prestige;
+      state.lastSubmittedPrestige = scorePlayer.prestige;
       renderLeaderboard(data.scores || []);
       elements.leaderboardStatus.textContent = data.accepted ? "结果已自动保存。" : "这位玩家已有更高记录。";
     } catch (error) {
@@ -1269,12 +1378,14 @@
   }
 
   function matchPayload() {
+    syncHumanNames();
     const finalStandings = standings();
-    const won = state.winner && state.winner.id === "human";
+    const humanNames = humanPlayers().map((player) => player.name).join(" / ");
+    const won = Boolean(state.winner && state.winner.isHuman);
     return {
       id: state.matchId,
       guestId: state.guestId,
-      playerName: displayPlayerName(),
+      playerName: humanNames || displayPlayerName(),
       playerCount: state.playerCount,
       result: won ? "win" : "loss",
       winnerId: state.winner ? state.winner.id : null,
@@ -1430,8 +1541,17 @@
     elements.scoreForm.addEventListener("submit", submitCurrentScore);
     elements.playerName.addEventListener("input", () => {
       savePlayerName(normalizedPlayerName());
-      if (state && !state.gameOver) human().name = displayPlayerName();
+      if (state && !state.gameOver) syncHumanNames();
       render();
+    });
+    elements.secondPlayerName.addEventListener("input", () => {
+      saveSecondPlayerName(normalizedSecondPlayerName());
+      if (state && !state.gameOver) syncHumanNames();
+      render();
+    });
+    elements.secondHumanToggle.addEventListener("change", () => {
+      saveSecondHumanEnabled(secondHumanEnabled());
+      newGame();
     });
     elements.leaderboardRefresh.addEventListener("click", loadLeaderboard);
     elements.matchRefresh.addEventListener("click", loadMatches);
@@ -1443,6 +1563,8 @@
   }
 
   elements.playerName.value = loadPlayerName();
+  elements.secondPlayerName.value = loadSecondPlayerName();
+  elements.secondHumanToggle.checked = loadSecondHumanEnabled();
   attachEvents();
   newGame();
   loadLeaderboard();

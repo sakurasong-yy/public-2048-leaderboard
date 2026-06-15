@@ -152,10 +152,18 @@
               </button>
             </div>
             <form class="score-form" id="score-form">
-              <label class="sr-only" for="player-name">玩家名字</label>
-              <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="留空游客游玩" />
+              <label class="sr-only" for="player-name">1号玩家名字</label>
+              <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="1号玩家 / 留空游客" />
               <button class="submit-score" id="submit-score-button" type="submit">保存</button>
             </form>
+            <div class="seat-form">
+              <label class="seat-toggle" for="second-human-toggle">
+                <input id="second-human-toggle" type="checkbox" />
+                <span>2号真人</span>
+              </label>
+              <label class="sr-only" for="second-player-name">2号玩家名字</label>
+              <input id="second-player-name" maxlength="18" autocomplete="nickname" placeholder="2号玩家 / 留空游客" />
+            </div>
             <ol class="leaderboard-list" id="leaderboard-list" aria-label="胜场榜"></ol>
             <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载胜场榜...</p>
           </section>
