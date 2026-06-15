@@ -5,7 +5,7 @@
 - `npm start` 启动 `server.js`
 - `/api/health` 用作健康检查
 - `railway.json` 使用 Railpack 构建，并通过 `npm start` 启动
-- 绑定 Volume 后，胜场榜会写到 `RAILWAY_VOLUME_MOUNT_PATH/scores.json`
+- 绑定 Volume 后，胜场榜会写到 `RAILWAY_VOLUME_MOUNT_PATH/scores.json`，牌局过程会写到 `RAILWAY_VOLUME_MOUNT_PATH/matches.json`
 
 ## 使用 Railway CLI
 
@@ -34,9 +34,9 @@ railway domain
 
 ## 持久化胜场榜
 
-如果要长期保存胜场榜，给服务添加一个 Railway Volume。Mount path 建议填 `/data`；代码会自动读取 Railway 提供的 `RAILWAY_VOLUME_MOUNT_PATH`，不需要额外环境变量。
+如果要长期保存胜场榜和每局过程档案，给服务添加一个 Railway Volume。Mount path 建议填 `/data`；代码会自动读取 Railway 提供的 `RAILWAY_VOLUME_MOUNT_PATH`，不需要额外环境变量。
 
-不绑定 Volume 也能运行游戏，但服务重启或重新部署后，胜场数据可能丢失。
+不绑定 Volume 也能运行游戏，但服务重启或重新部署后，胜场数据和牌局过程可能丢失。
 
 ## 本地验证
 
