@@ -831,7 +831,7 @@
 
   function renderPips(cost) {
     const row = document.createElement("div");
-    row.className = "pip-row";
+    row.className = "pip-row cost-strip";
 
     Object.entries(cost).forEach(([id, value]) => {
       if (value <= 0) return;
@@ -846,6 +846,7 @@
       const free = document.createElement("span");
       free.className = "pip gold";
       free.textContent = "0";
+      free.title = "免费";
       row.append(free);
     }
 
@@ -873,10 +874,26 @@
 
     const art = document.createElement("div");
     art.className = "card-art";
-    const tierBadge = document.createElement("span");
-    tierBadge.className = "card-tier";
-    tierBadge.textContent = card.points > 0 ? String(card.points) : `I${card.tier > 1 ? "I".repeat(card.tier - 1) : ""}`;
-    art.append(tierBadge);
+
+    const scene = document.createElement("div");
+    scene.className = "card-scene";
+    scene.setAttribute("aria-hidden", "true");
+
+    const gem = document.createElement("span");
+    gem.className = "card-gem-sigil";
+    gem.setAttribute("aria-hidden", "true");
+
+    const prestige = document.createElement("span");
+    prestige.className = "card-prestige";
+    if (card.points > 0) {
+      prestige.textContent = String(card.points);
+      prestige.title = `${card.points} 威望`;
+    } else {
+      prestige.classList.add("is-empty");
+      prestige.setAttribute("aria-hidden", "true");
+    }
+
+    art.append(scene, gem, prestige);
 
     const body = document.createElement("div");
     body.className = "card-body";
