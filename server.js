@@ -574,5 +574,5 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Piano curriculum server listening on http://localhost:${PORT}`);
+  console.log(`Gem Guild server listening on http://localhost:${PORT}`);
 });

@@ -1,8 +1,8 @@
 {
-  "name": "adult-piano-curriculum",
+  "name": "gem-guild-board-game",
   "version": "1.0.0",
   "private": true,
-  "description": "A static adult beginner piano curriculum page for the first 20 lessons.",
+  "description": "A visual gem-collecting tabletop board game with a tiny JSON-backed victory leaderboard.",
   "scripts": {
     "start": "node server.js"
   },
