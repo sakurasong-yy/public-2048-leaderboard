@@ -26,6 +26,7 @@ const mimeTypes = {
   ".svg": "image/svg+xml; charset=utf-8",
   ".webp": "image/webp"
 };
+const noStoreExtensions = new Set([".css", ".html", ".js"]);
 
 const requestCounts = new Map();
 
@@ -302,7 +303,7 @@ async function serveStatic(request, response, url) {
 
     response.writeHead(200, {
       "Content-Type": contentType,
-      "Cache-Control": extension === ".html" ? "no-store" : "public, max-age=300",
+      "Cache-Control": noStoreExtensions.has(extension) ? "no-store" : "public, max-age=300",
       "X-Content-Type-Options": "nosniff"
     });
 
