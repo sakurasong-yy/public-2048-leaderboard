@@ -7,11 +7,20 @@
   const LEADERBOARD_LIMIT = 5;
   const MATCH_LIMIT = 5;
   const PLAYER_KEY = "gem-guild-player";
-  const SECOND_PLAYER_KEY = "gem-guild-player-two";
   const PLAYER_COUNT_KEY = "gem-guild-player-count";
-  const SECOND_HUMAN_KEY = "gem-guild-second-human";
   const GUEST_KEY = "gem-guild-guest-id";
   const AI_NAMES = ["AI 维多利亚", "AI 奥古斯都", "AI 伊莎贝拉"];
+  const HUMAN_SEATS = [2, 3, 4];
+  const HUMAN_SEAT_NAME_KEYS = {
+    2: "gem-guild-player-two",
+    3: "gem-guild-player-three",
+    4: "gem-guild-player-four"
+  };
+  const HUMAN_SEAT_ENABLED_KEYS = {
+    2: "gem-guild-second-human",
+    3: "gem-guild-third-human",
+    4: "gem-guild-fourth-human"
+  };
 
   const gems = [
     { id: "ruby", label: "红宝石", short: "红", className: "gem-ruby", color: "#d84a3d" },
@@ -84,8 +93,9 @@
     leaderboardRefresh: document.querySelector("#leaderboard-refresh"),
     scoreForm: document.querySelector("#score-form"),
     playerName: document.querySelector("#player-name"),
-    secondPlayerName: document.querySelector("#second-player-name"),
-    secondHumanToggle: document.querySelector("#second-human-toggle"),
+    seatRows: Array.from(document.querySelectorAll("[data-seat-row]")),
+    seatNameInputs: Array.from(document.querySelectorAll("[data-seat-name]")),
+    seatToggles: Array.from(document.querySelectorAll("[data-human-seat]")),
     submitScore: document.querySelector("#submit-score-button"),
     matchList: document.querySelector("#match-list"),
     matchStatus: document.querySelector("#match-status"),
@@ -184,11 +194,12 @@
     return state.decks[tier].pop() || null;
   }
 
-  function makePlayer(id, name, isHuman) {
+  function makePlayer(id, name, isHuman, seat) {
     return {
       id,
       name,
       isHuman,
+      seat,
       tokens: emptyGemMap(0),
       bonuses: emptyColorMap(0),
       cards: [],
@@ -199,17 +210,17 @@
   }
 
   function makePlayers(count) {
-    const players = [makePlayer("human", displayPlayerName(), true)];
+    const players = [makePlayer("human", displayPlayerName(), true, 1)];
     let aiIndex = 0;
 
-    if (count >= 2 && secondHumanEnabled()) {
-      players.push(makePlayer("human-2", displaySecondPlayerName(), true));
-    }
-
-    while (players.length < count) {
-      const aiName = AI_NAMES[aiIndex] || `AI ${aiIndex + 1}`;
-      players.push(makePlayer(`ai-${aiIndex + 1}`, aiName, false));
-      aiIndex += 1;
+    for (let seat = 2; seat <= count; seat += 1) {
+      if (humanSeatEnabled(seat)) {
+        players.push(makePlayer(`human-${seat}`, displaySeatPlayerName(seat), true, seat));
+      } else {
+        const aiName = AI_NAMES[aiIndex] || `AI ${aiIndex + 1}`;
+        players.push(makePlayer(`ai-${aiIndex + 1}`, aiName, false, seat));
+        aiIndex += 1;
+      }
     }
 
     return players;
@@ -982,9 +993,18 @@
   }
 
   function renderSeatControls() {
-    const enabled = secondHumanEnabled();
-    elements.secondPlayerName.disabled = !enabled;
-    elements.secondPlayerName.setAttribute("aria-disabled", String(!enabled));
+    elements.seatRows.forEach((row) => {
+      const seat = Number(row.dataset.seatRow);
+      const inGame = seat <= selectedPlayerCount;
+      const enabled = inGame && humanSeatEnabled(seat);
+      const input = seatNameInput(seat);
+
+      row.hidden = !inGame;
+      if (input) {
+        input.disabled = !enabled;
+        input.setAttribute("aria-disabled", String(!enabled));
+      }
+    });
   }
 
   function renderPlayerSummary() {
@@ -1164,34 +1184,42 @@
     }
   }
 
-  function loadSecondPlayerName() {
+  function seatNameInput(seat) {
+    return elements.seatNameInputs.find((input) => Number(input.dataset.seatName) === seat);
+  }
+
+  function seatToggle(seat) {
+    return elements.seatToggles.find((toggle) => Number(toggle.dataset.humanSeat) === seat);
+  }
+
+  function loadSeatPlayerName(seat) {
     try {
-      return localStorage.getItem(SECOND_PLAYER_KEY) || "";
+      return localStorage.getItem(HUMAN_SEAT_NAME_KEYS[seat]) || "";
     } catch (error) {
       return "";
     }
   }
 
-  function saveSecondPlayerName(name) {
+  function saveSeatPlayerName(seat, name) {
     try {
-      localStorage.setItem(SECOND_PLAYER_KEY, name);
+      localStorage.setItem(HUMAN_SEAT_NAME_KEYS[seat], name);
     } catch (error) {
       // Local storage is optional.
     }
   }
 
-  function loadSecondHumanEnabled() {
+  function loadHumanSeatEnabled(seat) {
     try {
-      const saved = localStorage.getItem(SECOND_HUMAN_KEY);
+      const saved = localStorage.getItem(HUMAN_SEAT_ENABLED_KEYS[seat]);
       return saved === null ? true : saved === "true";
     } catch (error) {
       return true;
     }
   }
 
-  function saveSecondHumanEnabled(enabled) {
+  function saveHumanSeatEnabled(seat, enabled) {
     try {
-      localStorage.setItem(SECOND_HUMAN_KEY, String(enabled));
+      localStorage.setItem(HUMAN_SEAT_ENABLED_KEYS[seat], String(enabled));
     } catch (error) {
       // Local storage is optional.
     }
@@ -1230,12 +1258,14 @@
     return elements.playerName.value.trim().replace(/\s+/g, " ");
   }
 
-  function normalizedSecondPlayerName() {
-    return elements.secondPlayerName.value.trim().replace(/\s+/g, " ");
+  function normalizedSeatPlayerName(seat) {
+    const input = seatNameInput(seat);
+    return input ? input.value.trim().replace(/\s+/g, " ") : "";
   }
 
-  function secondHumanEnabled() {
-    return Boolean(elements.secondHumanToggle.checked);
+  function humanSeatEnabled(seat) {
+    const toggle = seatToggle(seat);
+    return Boolean(toggle && toggle.checked);
   }
 
   function guestDisplayName() {
@@ -1247,16 +1277,18 @@
     return normalizedPlayerName() || guestDisplayName();
   }
 
-  function displaySecondPlayerName() {
-    return normalizedSecondPlayerName() || "游客 2";
+  function displaySeatPlayerName(seat) {
+    return normalizedSeatPlayerName(seat) || `游客 ${seat}`;
   }
 
   function syncHumanNames() {
     if (!state) return;
     const primary = state.players.find((player) => player.id === "human");
-    const secondary = state.players.find((player) => player.id === "human-2");
     if (primary) primary.name = displayPlayerName();
-    if (secondary) secondary.name = displaySecondPlayerName();
+    HUMAN_SEATS.forEach((seat) => {
+      const player = state.players.find((candidate) => candidate.id === `human-${seat}`);
+      if (player) player.name = displaySeatPlayerName(seat);
+    });
   }
 
   function scorePlayerForRecord() {
@@ -1338,7 +1370,11 @@
     const scorePlayer = scorePlayerForRecord();
     const name = scorePlayer.name;
     if (scorePlayer.id === "human" && normalizedPlayerName()) savePlayerName(normalizedPlayerName());
-    if (scorePlayer.id === "human-2" && normalizedSecondPlayerName()) saveSecondPlayerName(normalizedSecondPlayerName());
+    HUMAN_SEATS.forEach((seat) => {
+      if (scorePlayer.id === `human-${seat}` && normalizedSeatPlayerName(seat)) {
+        saveSeatPlayerName(seat, normalizedSeatPlayerName(seat));
+      }
+    });
 
     elements.submitScore.disabled = true;
     elements.leaderboardStatus.textContent = "正在保存...";
@@ -1544,14 +1580,19 @@
       if (state && !state.gameOver) syncHumanNames();
       render();
     });
-    elements.secondPlayerName.addEventListener("input", () => {
-      saveSecondPlayerName(normalizedSecondPlayerName());
-      if (state && !state.gameOver) syncHumanNames();
-      render();
+    elements.seatNameInputs.forEach((input) => {
+      input.addEventListener("input", () => {
+        const seat = Number(input.dataset.seatName);
+        saveSeatPlayerName(seat, normalizedSeatPlayerName(seat));
+        if (state && !state.gameOver) syncHumanNames();
+        render();
+      });
     });
-    elements.secondHumanToggle.addEventListener("change", () => {
-      saveSecondHumanEnabled(secondHumanEnabled());
-      newGame();
+    elements.seatToggles.forEach((toggle) => {
+      toggle.addEventListener("change", () => {
+        saveHumanSeatEnabled(Number(toggle.dataset.humanSeat), toggle.checked);
+        newGame();
+      });
     });
     elements.leaderboardRefresh.addEventListener("click", loadLeaderboard);
     elements.matchRefresh.addEventListener("click", loadMatches);
@@ -1563,8 +1604,12 @@
   }
 
   elements.playerName.value = loadPlayerName();
-  elements.secondPlayerName.value = loadSecondPlayerName();
-  elements.secondHumanToggle.checked = loadSecondHumanEnabled();
+  HUMAN_SEATS.forEach((seat) => {
+    const input = seatNameInput(seat);
+    const toggle = seatToggle(seat);
+    if (input) input.value = loadSeatPlayerName(seat);
+    if (toggle) toggle.checked = loadHumanSeatEnabled(seat);
+  });
   attachEvents();
   newGame();
   loadLeaderboard();

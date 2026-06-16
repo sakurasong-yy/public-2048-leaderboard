@@ -1082,8 +1082,7 @@ button:disabled {
 }
 
 .score-form input,
-.seat-form input[type="text"],
-#second-player-name {
+.seat-form [data-seat-name] {
   min-width: 0;
   height: 38px;
   border: 1px solid rgba(240, 207, 128, 0.34);
@@ -1098,17 +1097,17 @@ button:disabled {
 }
 
 .score-form input:focus,
-#second-player-name:focus {
+.seat-form [data-seat-name]:focus {
   border-color: var(--line-strong);
   box-shadow: 0 0 0 3px rgba(242, 199, 90, 0.14);
 }
 
 .score-form input::placeholder,
-#second-player-name::placeholder {
+.seat-form [data-seat-name]::placeholder {
   color: #81745d;
 }
 
-#second-player-name:disabled {
+.seat-form [data-seat-name]:disabled {
   opacity: 0.48;
   cursor: not-allowed;
 }

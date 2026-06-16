@@ -156,13 +156,31 @@
               <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="1号玩家 / 留空游客" />
               <button class="submit-score" id="submit-score-button" type="submit">保存</button>
             </form>
-            <div class="seat-form">
-              <label class="seat-toggle" for="second-human-toggle">
-                <input id="second-human-toggle" type="checkbox" />
-                <span>2号真人</span>
-              </label>
-              <label class="sr-only" for="second-player-name">2号玩家名字</label>
-              <input id="second-player-name" maxlength="18" autocomplete="nickname" placeholder="2号玩家 / 留空游客" />
+            <div class="seat-list" aria-label="真人座位">
+              <div class="seat-form" data-seat-row="2">
+                <label class="seat-toggle" for="human-seat-2">
+                  <input id="human-seat-2" type="checkbox" data-human-seat="2" />
+                  <span>2号真人</span>
+                </label>
+                <label class="sr-only" for="player-name-2">2号玩家名字</label>
+                <input id="player-name-2" data-seat-name="2" maxlength="18" autocomplete="nickname" placeholder="2号玩家 / 留空游客" />
+              </div>
+              <div class="seat-form" data-seat-row="3">
+                <label class="seat-toggle" for="human-seat-3">
+                  <input id="human-seat-3" type="checkbox" data-human-seat="3" />
+                  <span>3号真人</span>
+                </label>
+                <label class="sr-only" for="player-name-3">3号玩家名字</label>
+                <input id="player-name-3" data-seat-name="3" maxlength="18" autocomplete="nickname" placeholder="3号玩家 / 留空游客" />
+              </div>
+              <div class="seat-form" data-seat-row="4">
+                <label class="seat-toggle" for="human-seat-4">
+                  <input id="human-seat-4" type="checkbox" data-human-seat="4" />
+                  <span>4号真人</span>
+                </label>
+                <label class="sr-only" for="player-name-4">4号玩家名字</label>
+                <input id="player-name-4" data-seat-name="4" maxlength="18" autocomplete="nickname" placeholder="4号玩家 / 留空游客" />
+              </div>
             </div>
             <ol class="leaderboard-list" id="leaderboard-list" aria-label="胜场榜"></ol>
             <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载胜场榜...</p>
