@@ -577,62 +577,44 @@ button:disabled {
 }
 
 .pip {
-  min-width: 23px;
-  height: 23px;
-  border: 2px solid rgba(255, 242, 202, 0.76);
-  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 243, 208, 0.58);
+  border-radius: 4px;
   color: #fff7dd;
   display: inline-grid;
   place-items: center;
-  padding: 0 5px;
-  font-size: 0.78rem;
-  font-weight: 950;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  font-weight: 900;
   line-height: 1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.46);
-  box-shadow:
-    0 2px 5px rgba(62, 42, 19, 0.26),
-    inset 0 2px 2px rgba(255, 255, 255, 0.24),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.22);
 }
 
 .pip.ruby {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.38), transparent 26%),
-    var(--ruby);
+  background: var(--ruby);
 }
 
 .pip.sapphire {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.38), transparent 26%),
-    var(--sapphire);
+  background: var(--sapphire);
 }
 
 .pip.emerald {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.38), transparent 26%),
-    var(--emerald);
+  background: var(--emerald);
 }
 
 .pip.diamond {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.62), transparent 28%),
-    #d4d4c9;
+  background: #d4d4c9;
   color: #241d17;
-  text-shadow: none;
 }
 
 .pip.onyx {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.28), transparent 28%),
-    #111;
+  background: #111;
 }
 
 .pip.gold {
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.42), transparent 28%),
-    var(--wild);
+  background: var(--wild);
   color: #261c10;
-  text-shadow: none;
 }
 
 .market-lanes {
@@ -649,25 +631,22 @@ button:disabled {
 
 .card-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(144px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(132px, 1fr));
+  gap: 10px;
 }
 
 .market-card,
 .reserved-card {
   position: relative;
-  min-height: 178px;
-  border: 3px solid #d7c58f;
-  border-radius: 10px;
-  background:
-    linear-gradient(180deg, #f9edcd, #e1c58d),
-    var(--paper);
+  min-height: 160px;
+  border: 1px solid rgba(239, 202, 121, 0.42);
+  border-radius: var(--radius);
+  background: var(--paper);
   color: var(--paper-ink);
   overflow: hidden;
   box-shadow:
-    0 18px 28px rgba(0, 0, 0, 0.34),
-    0 3px 0 rgba(255, 246, 206, 0.72) inset,
-    0 -3px 0 rgba(92, 63, 30, 0.18) inset;
+    0 10px 20px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 3px rgba(80, 54, 28, 0.16);
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -675,166 +654,88 @@ button:disabled {
     box-shadow 160ms ease;
 }
 
-.market-card::before,
-.reserved-card::before {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  z-index: 3;
-  border: 1px solid rgba(93, 62, 28, 0.24);
-  border-radius: 6px;
-  pointer-events: none;
-}
-
 .market-card.is-selected,
 .reserved-card.is-selected {
-  border-color: #fff2ac;
+  border-color: #fff0aa;
   box-shadow:
-    0 0 0 3px rgba(242, 199, 90, 0.42),
-    0 20px 32px rgba(0, 0, 0, 0.42),
-    0 3px 0 rgba(255, 246, 206, 0.74) inset;
+    0 0 0 2px rgba(242, 199, 90, 0.38),
+    0 14px 24px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 3px rgba(80, 54, 28, 0.14);
 }
 
 .market-card.is-affordable::after,
 .reserved-card.is-affordable::after {
   content: "";
   position: absolute;
-  inset: 3px;
-  z-index: 4;
+  inset: 0;
   border: 2px solid rgba(77, 205, 122, 0.7);
-  border-radius: 7px;
+  border-radius: var(--radius);
   pointer-events: none;
 }
 
 .card-art {
-  position: relative;
-  min-height: 96px;
-  overflow: hidden;
+  min-height: 74px;
+  padding: 10px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   background:
-    radial-gradient(circle at 74% 18%, rgba(255, 255, 255, 0.42), transparent 35px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 42%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.34)),
+    radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.38), transparent 38px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.24)),
     var(--card-color, #765d3e);
-  border-bottom: 4px solid rgba(248, 231, 184, 0.86);
 }
 
 .card-art::before {
   content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 28% 105%, rgba(0, 0, 0, 0.32), transparent 44%),
-    radial-gradient(ellipse at 62% 78%, rgba(255, 255, 255, 0.12), transparent 24%),
-    linear-gradient(160deg, transparent 34%, rgba(255, 255, 255, 0.1) 35%, transparent 38%);
-  mix-blend-mode: soft-light;
-}
-
-.card-art::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 28px;
-  background: linear-gradient(180deg, transparent, rgba(21, 14, 8, 0.22));
-}
-
-.card-scene {
-  position: absolute;
-  inset: 13px 13px 10px;
-  border-radius: 5px;
-  background:
-    radial-gradient(circle at 70% 28%, rgba(255, 255, 255, 0.24), transparent 21px),
-    radial-gradient(ellipse at 42% 105%, rgba(0, 0, 0, 0.22), transparent 38%),
-    repeating-linear-gradient(112deg, rgba(255, 255, 255, 0.08) 0 2px, transparent 2px 14px);
-  opacity: 0.72;
-}
-
-.card-gem-sigil {
-  position: absolute;
-  left: 17px;
-  top: 16px;
-  width: 52px;
-  height: 52px;
-  border: 3px solid rgba(255, 242, 204, 0.72);
-  border-radius: 8px 20px 8px 20px;
-  background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.36), transparent 16px),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.18)),
-    var(--bonus-color, #c99b42);
-  box-shadow:
-    0 9px 14px rgba(0, 0, 0, 0.3),
-    0 0 0 2px rgba(62, 40, 20, 0.22) inset;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px 18px 8px 18px;
   transform: rotate(45deg);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), transparent 28%),
+    linear-gradient(315deg, rgba(0, 0, 0, 0.34), transparent 58%),
+    var(--bonus-color, #c99b42);
+  border: 2px solid rgba(255, 245, 208, 0.66);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-.card-prestige {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  min-width: 36px;
-  height: 36px;
-  border: 2px solid rgba(255, 232, 164, 0.9);
-  border-radius: 9px;
-  background:
-    linear-gradient(180deg, rgba(45, 37, 29, 0.96), rgba(16, 13, 11, 0.96));
-  color: #ffefb4;
+.card-tier {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 239, 188, 0.86);
+  border-radius: var(--radius);
+  background: rgba(7, 7, 7, 0.74);
+  color: #ffe8a7;
   display: grid;
   place-items: center;
-  padding: 0 8px;
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 950;
-  line-height: 1;
   font-variant-numeric: tabular-nums;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.32),
-    0 1px 0 rgba(255, 255, 255, 0.14) inset;
-}
-
-.card-prestige.is-empty {
-  display: none;
 }
 
 .card-body {
-  position: relative;
-  min-height: 76px;
+  min-height: 86px;
   display: grid;
   align-content: space-between;
-  gap: 10px;
-  padding: 12px 13px 11px;
+  gap: 8px;
+  padding: 10px;
   background:
-    radial-gradient(circle at 50% -10%, rgba(255, 255, 255, 0.75), transparent 58px),
-    linear-gradient(180deg, rgba(255, 248, 224, 0.94), rgba(229, 205, 158, 0.9)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(232, 211, 174, 0.78)),
     var(--paper);
 }
 
-.card-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(90deg, rgba(94, 65, 30, 0.08), transparent 12%, transparent 88%, rgba(94, 65, 30, 0.08)),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 9px);
-  pointer-events: none;
-}
-
 .card-title {
-  position: relative;
-  min-height: 2.25em;
+  min-height: 1.2em;
   color: #322316;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 950;
-  line-height: 1.2;
+  font-size: 0.83rem;
+  font-weight: 900;
+  line-height: 1.15;
 }
 
-.cost-row,
-.cost-strip {
-  position: relative;
+.cost-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
+  gap: 4px;
 }
 
 .side-panel {
@@ -1221,46 +1122,26 @@ button:disabled {
 }
 
 .reserved-card {
-  min-height: 136px;
-  border-width: 2px;
+  min-height: 122px;
 }
 
 .reserved-card .card-art {
-  min-height: 64px;
+  min-height: 58px;
 }
 
-.reserved-card .card-gem-sigil {
-  left: 14px;
-  top: 13px;
-  width: 36px;
-  height: 36px;
-  border-width: 2px;
+.reserved-card .card-art::before {
+  width: 34px;
+  height: 34px;
 }
 
 .reserved-card .card-body {
-  min-height: 68px;
-  padding: 8px 9px;
+  min-height: 62px;
+  padding: 8px;
 }
 
 .reserved-card .card-title {
   min-height: auto;
   font-size: 0.72rem;
-}
-
-.reserved-card .card-prestige {
-  right: 9px;
-  top: 9px;
-  min-width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  font-size: 0.92rem;
-}
-
-.reserved-card .pip {
-  min-width: 18px;
-  height: 18px;
-  border-width: 1px;
-  font-size: 0.64rem;
 }
 
 .empty-slot {
