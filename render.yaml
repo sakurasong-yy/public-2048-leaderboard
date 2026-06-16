@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: gem-guild-board-game
+    name: public-2048-leaderboard
     runtime: node
     plan: starter
     region: singapore

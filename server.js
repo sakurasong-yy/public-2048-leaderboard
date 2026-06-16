@@ -90,7 +90,10 @@ async function readScores() {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed.scores) ? parsed.scores : [];
   } catch (error) {
-    if (error.code === "ENOENT") return [];
+    if (error.code === "ENOENT") {
+      return [];
+    }
+
     throw error;
   }
 }
@@ -119,23 +122,10 @@ function readInteger(value, fallback) {
   return Math.trunc(number);
 }
 
-function normalizeScore(score) {
-  return {
-    id: score.id || crypto.randomUUID(),
-    name: normalizeName(score.name),
-    prestige: Math.max(0, readInteger(score.prestige ?? score.score, 0)),
-    rounds: Math.max(0, readInteger(score.rounds ?? score.moves, 0)),
-    cards: Math.max(0, readInteger(score.cards ?? score.maxTile, 0)),
-    won: Boolean(score.won),
-    createdAt: score.createdAt || new Date().toISOString()
-  };
-}
-
 function compareScores(first, second) {
-  if (first.won !== second.won) return first.won ? -1 : 1;
-  if (first.prestige !== second.prestige) return second.prestige - first.prestige;
-  if (first.cards !== second.cards) return second.cards - first.cards;
-  if (first.rounds !== second.rounds) return first.rounds - second.rounds;
+  if (first.score !== second.score) return second.score - first.score;
+  if (first.maxTile !== second.maxTile) return second.maxTile - first.maxTile;
+  if (first.moves !== second.moves) return first.moves - second.moves;
   return new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
 }
 
@@ -146,8 +136,16 @@ function isBetterScore(candidate, existing) {
 function sanitizeScores(scores) {
   return scores
     .filter((score) => score && typeof score.name === "string")
-    .map(normalizeScore)
-    .filter((score) => score.name)
+    .map((score) => ({
+      id: score.id || crypto.randomUUID(),
+      name: normalizeName(score.name),
+      score: readInteger(score.score, 0),
+      moves: Math.max(0, readInteger(score.moves, 0)),
+      maxTile: Math.max(0, readInteger(score.maxTile, 0)),
+      won: Boolean(score.won),
+      createdAt: score.createdAt || new Date().toISOString()
+    }))
+    .filter((score) => score.name && score.score >= 0)
     .sort(compareScores)
     .slice(0, SCORE_LIMIT);
 }
@@ -156,35 +154,43 @@ function publicScore(score) {
   return {
     id: score.id,
     name: score.name,
-    prestige: score.prestige,
-    rounds: score.rounds,
-    cards: score.cards,
+    score: score.score,
+    moves: score.moves,
+    maxTile: score.maxTile,
     won: score.won,
-    createdAt: score.createdAt,
-    score: score.prestige,
-    moves: score.rounds,
-    maxTile: score.cards
+    createdAt: score.createdAt
   };
 }
 
 function validateEntry(payload) {
   const name = normalizeName(payload.name);
-  const prestige = readInteger(payload.prestige ?? payload.score, -1);
-  const rounds = readInteger(payload.rounds ?? payload.moves, -1);
-  const cards = readInteger(payload.cards ?? payload.maxTile, -1);
+  const score = readInteger(payload.score, -1);
+  const moves = readInteger(payload.moves, -1);
+  const maxTile = readInteger(payload.maxTile, 0);
 
-  if (!name) return { error: "Name is required." };
-  if (prestige < 0 || prestige > 1000) return { error: "Prestige looks invalid." };
-  if (rounds < 1 || rounds > 10000) return { error: "Rounds look invalid." };
-  if (cards < 0 || cards > 1000) return { error: "Cards look invalid." };
+  if (!name) {
+    return { error: "Name is required." };
+  }
+
+  if (score < 1 || score > 1000000000) {
+    return { error: "Score must be a positive number." };
+  }
+
+  if (moves < 1 || moves > 1000000) {
+    return { error: "Moves must be a positive number." };
+  }
+
+  if (maxTile < 2 || maxTile > 1000000000) {
+    return { error: "Max tile looks invalid." };
+  }
 
   return {
     entry: {
       id: crypto.randomUUID(),
       name,
-      prestige,
-      rounds,
-      cards,
+      score,
+      moves,
+      maxTile,
       won: Boolean(payload.won),
       createdAt: new Date().toISOString()
     }
@@ -300,8 +306,11 @@ async function serveStatic(request, response, url) {
       "X-Content-Type-Options": "nosniff"
     });
 
-    if (request.method === "HEAD") response.end();
-    else response.end(data);
+    if (request.method === "HEAD") {
+      response.end();
+    } else {
+      response.end(data);
+    }
   } catch (error) {
     if (error.code === "ENOENT") {
       sendText(response, 404, "Not found.");
@@ -349,5 +358,5 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Gem Guild server listening on http://localhost:${PORT}`);
+  console.log(`2048 server listening on http://localhost:${PORT}`);
 });
