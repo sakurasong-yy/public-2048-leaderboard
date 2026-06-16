@@ -10,13 +10,12 @@ const ROOT = __dirname;
 const PORT = Number.parseInt(process.env.PORT || "4173", 10);
 const HOST = process.env.HOST || "0.0.0.0";
 const SCORE_LIMIT = 200;
-const MATCH_LIMIT = 300;
 const DEFAULT_LEADERBOARD_LIMIT = 10;
-const DEFAULT_MATCH_LIMIT = 10;
-const MAX_BODY_BYTES = 256 * 1024;
-const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(ROOT, "data");
-const SCORE_DATA_FILE = process.env.SCORES_FILE || path.join(DATA_DIR, "scores.json");
-const MATCH_DATA_FILE = process.env.MATCHES_FILE || path.join(DATA_DIR, "matches.json");
+const MAX_BODY_BYTES = 16 * 1024;
+const DEFAULT_DATA_FILE = process.env.RAILWAY_VOLUME_MOUNT_PATH
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, "scores.json")
+  : path.join(ROOT, "data", "scores.json");
+const DATA_FILE = process.env.SCORES_FILE || DEFAULT_DATA_FILE;
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -59,7 +58,7 @@ function clientIp(request) {
 function isRateLimited(request) {
   const now = Date.now();
   const windowMs = 60 * 1000;
-  const maxRequests = request.method === "POST" ? 20 : 120;
+  const maxRequests = request.method === "POST" ? 12 : 90;
   const key = `${clientIp(request)}:${request.method}`;
   const record = requestCounts.get(key);
 
@@ -85,45 +84,29 @@ async function readBody(request) {
   return body;
 }
 
-async function readJsonFile(filePath, key) {
+async function readScores() {
   try {
-    const raw = await fs.readFile(filePath, "utf8");
+    const raw = await fs.readFile(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed[key]) ? parsed[key] : [];
+    return Array.isArray(parsed.scores) ? parsed.scores : [];
   } catch (error) {
     if (error.code === "ENOENT") return [];
     throw error;
   }
 }
 
-async function writeJsonFile(filePath, key, records) {
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  const tmpFile = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-  await fs.writeFile(tmpFile, `${JSON.stringify({ [key]: records }, null, 2)}\n`, "utf8");
-  await fs.rename(tmpFile, filePath);
-}
-
-async function readScores() {
-  return readJsonFile(SCORE_DATA_FILE, "scores");
-}
-
 async function writeScores(scores) {
-  return writeJsonFile(SCORE_DATA_FILE, "scores", scores);
-}
-
-async function readMatches() {
-  return readJsonFile(MATCH_DATA_FILE, "matches");
-}
-
-async function writeMatches(matches) {
-  return writeJsonFile(MATCH_DATA_FILE, "matches", matches);
+  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+  const tmpFile = `${DATA_FILE}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tmpFile, `${JSON.stringify({ scores }, null, 2)}\n`, "utf8");
+  await fs.rename(tmpFile, DATA_FILE);
 }
 
 function normalizeName(name) {
   return String(name || "")
     .trim()
     .replace(/\s+/g, " ")
-    .slice(0, 28);
+    .slice(0, 18);
 }
 
 function normalizeNameKey(name) {
@@ -134,19 +117,6 @@ function readInteger(value, fallback) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.trunc(number);
-}
-
-function clampText(value, maxLength) {
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .slice(0, maxLength);
-}
-
-function normalizeIso(value) {
-  const date = new Date(value || Date.now());
-  if (Number.isNaN(date.getTime())) return new Date().toISOString();
-  return date.toISOString();
 }
 
 function normalizeScore(score) {
@@ -231,129 +201,6 @@ function rankedPayload(scores, entry, accepted, limit) {
   };
 }
 
-function normalizeGemMap(value) {
-  const source = value && typeof value === "object" ? value : {};
-  return {
-    ruby: Math.max(0, readInteger(source.ruby, 0)),
-    sapphire: Math.max(0, readInteger(source.sapphire, 0)),
-    emerald: Math.max(0, readInteger(source.emerald, 0)),
-    diamond: Math.max(0, readInteger(source.diamond, 0)),
-    onyx: Math.max(0, readInteger(source.onyx, 0)),
-    gold: Math.max(0, readInteger(source.gold, 0))
-  };
-}
-
-function normalizeBonusMap(value) {
-  const source = value && typeof value === "object" ? value : {};
-  return {
-    ruby: Math.max(0, readInteger(source.ruby, 0)),
-    sapphire: Math.max(0, readInteger(source.sapphire, 0)),
-    emerald: Math.max(0, readInteger(source.emerald, 0)),
-    diamond: Math.max(0, readInteger(source.diamond, 0)),
-    onyx: Math.max(0, readInteger(source.onyx, 0))
-  };
-}
-
-function normalizePlayer(player) {
-  return {
-    id: clampText(player && player.id, 48),
-    name: normalizeName(player && player.name),
-    prestige: Math.max(0, readInteger(player && player.prestige, 0)),
-    cards: Math.max(0, readInteger(player && player.cards, 0)),
-    reserved: Math.max(0, readInteger(player && player.reserved, 0)),
-    nobles: Math.max(0, readInteger(player && player.nobles, 0)),
-    bonuses: normalizeBonusMap(player && player.bonuses),
-    tokens: normalizeGemMap(player && player.tokens)
-  };
-}
-
-function normalizeAction(action, index) {
-  let detail = null;
-  if (action && action.detail && typeof action.detail === "object") {
-    const detailText = JSON.stringify(action.detail);
-    if (detailText.length <= 2400) detail = action.detail;
-  }
-
-  return {
-    step: Math.max(1, readInteger(action && action.step, index + 1)),
-    round: Math.max(1, readInteger(action && action.round, 1)),
-    playerId: clampText(action && action.playerId, 48),
-    playerName: normalizeName(action && action.playerName),
-    type: clampText(action && action.type, 32) || "log",
-    summary: clampText(action && action.summary, 240),
-    detail,
-    at: normalizeIso(action && action.at)
-  };
-}
-
-function normalizeMatch(match) {
-  const playerCount = readInteger(match.playerCount, 4);
-  const actions = Array.isArray(match.actions) ? match.actions.slice(0, 500).map(normalizeAction) : [];
-  const players = Array.isArray(match.players) ? match.players.slice(0, 4).map(normalizePlayer) : [];
-
-  return {
-    id: clampText(match.id, 80) || crypto.randomUUID(),
-    guestId: clampText(match.guestId, 80),
-    playerName: normalizeName(match.playerName),
-    playerCount: [2, 3, 4].includes(playerCount) ? playerCount : 4,
-    result: match.result === "win" ? "win" : "loss",
-    winnerId: clampText(match.winnerId, 48),
-    winnerName: normalizeName(match.winnerName),
-    rounds: Math.max(1, readInteger(match.rounds, 1)),
-    startedAt: normalizeIso(match.startedAt),
-    endedAt: normalizeIso(match.endedAt),
-    players,
-    actions,
-    actionCount: actions.length
-  };
-}
-
-function compareMatches(first, second) {
-  return new Date(second.endedAt).getTime() - new Date(first.endedAt).getTime();
-}
-
-function sanitizeMatches(matches) {
-  return matches
-    .filter((match) => match && typeof match === "object")
-    .map(normalizeMatch)
-    .filter((match) => match.id && match.playerName && match.winnerName)
-    .sort(compareMatches)
-    .slice(0, MATCH_LIMIT);
-}
-
-function publicMatch(match, includeActions) {
-  const payload = {
-    id: match.id,
-    guestId: match.guestId,
-    playerName: match.playerName,
-    playerCount: match.playerCount,
-    result: match.result,
-    winnerId: match.winnerId,
-    winnerName: match.winnerName,
-    rounds: match.rounds,
-    startedAt: match.startedAt,
-    endedAt: match.endedAt,
-    players: match.players,
-    actionCount: match.actionCount
-  };
-
-  if (includeActions) payload.actions = match.actions;
-  return payload;
-}
-
-function validateMatch(payload) {
-  const match = normalizeMatch(payload || {});
-
-  if (!match.playerName) return { error: "Player name is required." };
-  if (![2, 3, 4].includes(match.playerCount)) return { error: "Player count is invalid." };
-  if (match.rounds < 1 || match.rounds > 10000) return { error: "Rounds look invalid." };
-  if (!match.winnerName || !match.winnerId) return { error: "Winner is required." };
-  if (!match.players.length || match.players.length > 4) return { error: "Players look invalid." };
-  if (!match.actions.length || match.actions.length > 500) return { error: "Actions look invalid." };
-
-  return { match };
-}
-
 async function handleLeaderboard(request, response, url) {
   if (request.method !== "GET") {
     sendJson(response, 405, { error: "Method not allowed." });
@@ -415,67 +262,6 @@ async function handleScoreSubmit(request, response) {
   await writeScores(ranked);
 
   sendJson(response, accepted ? 201 : 200, rankedPayload(ranked, entry, accepted, DEFAULT_LEADERBOARD_LIMIT));
-}
-
-async function handleMatches(request, response, url) {
-  if (request.method === "GET") {
-    const limit = Math.min(50, Math.max(1, readInteger(url.searchParams.get("limit"), DEFAULT_MATCH_LIMIT)));
-    const matches = sanitizeMatches(await readMatches());
-    sendJson(response, 200, {
-      matches: matches.slice(0, limit).map((match) => publicMatch(match, false))
-    });
-    return;
-  }
-
-  if (request.method !== "POST") {
-    sendJson(response, 405, { error: "Method not allowed." });
-    return;
-  }
-
-  const rawBody = await readBody(request);
-  let payload;
-
-  try {
-    payload = JSON.parse(rawBody || "{}");
-  } catch (error) {
-    sendJson(response, 400, { error: "Invalid JSON." });
-    return;
-  }
-
-  const validation = validateMatch(payload);
-  if (validation.error) {
-    sendJson(response, 400, { error: validation.error });
-    return;
-  }
-
-  const incoming = validation.match;
-  const matches = sanitizeMatches(await readMatches()).filter((match) => match.id !== incoming.id);
-  matches.push(incoming);
-  const ranked = sanitizeMatches(matches).slice(0, MATCH_LIMIT);
-  await writeMatches(ranked);
-
-  sendJson(response, 201, {
-    match: publicMatch(incoming, true),
-    matches: ranked.slice(0, DEFAULT_MATCH_LIMIT).map((match) => publicMatch(match, false))
-  });
-}
-
-async function handleMatchDetail(request, response, matchId) {
-  if (request.method !== "GET") {
-    sendJson(response, 405, { error: "Method not allowed." });
-    return;
-  }
-
-  const matches = sanitizeMatches(await readMatches());
-  const match = matches.find((candidate) => candidate.id === matchId);
-  if (!match) {
-    sendJson(response, 404, { error: "Match not found." });
-    return;
-  }
-
-  sendJson(response, 200, {
-    match: publicMatch(match, true)
-  });
 }
 
 async function serveStatic(request, response, url) {
@@ -546,17 +332,6 @@ async function route(request, response) {
 
   if (url.pathname === "/api/scores") {
     await handleScoreSubmit(request, response);
-    return;
-  }
-
-  if (url.pathname === "/api/matches") {
-    await handleMatches(request, response, url);
-    return;
-  }
-
-  if (url.pathname.startsWith("/api/matches/")) {
-    const matchId = decodeURIComponent(url.pathname.slice("/api/matches/".length));
-    await handleMatchDetail(request, response, matchId);
     return;
   }
 

@@ -33,11 +33,6 @@
         </div>
 
         <div class="top-actions" aria-label="游戏控制">
-          <div class="mode-tabs" role="group" aria-label="选择玩家人数">
-            <button class="mode-tab" type="button" data-player-count="2" aria-pressed="false">2人</button>
-            <button class="mode-tab" type="button" data-player-count="3" aria-pressed="false">3人</button>
-            <button class="mode-tab" type="button" data-player-count="4" aria-pressed="true">4人</button>
-          </div>
           <button class="icon-button" id="new-game-button" type="button" aria-label="新游戏" title="新游戏">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 12a8 8 0 1 1-2.34-5.66" />
@@ -92,7 +87,7 @@
             <div class="player-heading">
               <div>
                 <h2 id="human-title">你</h2>
-                <span id="round-label">游客局 · 回合 1</span>
+                <span id="round-label">回合 1</span>
               </div>
               <strong id="human-prestige">0</strong>
             </div>
@@ -153,25 +148,11 @@
             </div>
             <form class="score-form" id="score-form">
               <label class="sr-only" for="player-name">玩家名字</label>
-              <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="留空游客游玩" />
+              <input id="player-name" name="playerName" maxlength="18" autocomplete="nickname" placeholder="输入名字" />
               <button class="submit-score" id="submit-score-button" type="submit">保存</button>
             </form>
             <ol class="leaderboard-list" id="leaderboard-list" aria-label="胜场榜"></ol>
             <p class="leaderboard-status" id="leaderboard-status" aria-live="polite">正在加载胜场榜...</p>
-          </section>
-
-          <section class="match-panel panel" aria-labelledby="match-title">
-            <div class="panel-heading">
-              <h2 id="match-title">牌局档案</h2>
-              <button class="mini-icon-button" id="match-refresh" type="button" aria-label="刷新牌局档案" title="刷新牌局档案">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-                  <path d="M20 4v6h-6" />
-                </svg>
-              </button>
-            </div>
-            <ol class="match-list" id="match-list" aria-label="最近牌局"></ol>
-            <p class="match-status" id="match-status" aria-live="polite">本局过程会自动记录。</p>
           </section>
 
           <section class="log-panel panel" aria-labelledby="log-title">

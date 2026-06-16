@@ -5,11 +5,7 @@
   const RESERVE_LIMIT = 3;
   const MAX_TOKENS = 10;
   const LEADERBOARD_LIMIT = 5;
-  const MATCH_LIMIT = 5;
   const PLAYER_KEY = "gem-guild-player";
-  const PLAYER_COUNT_KEY = "gem-guild-player-count";
-  const GUEST_KEY = "gem-guild-guest-id";
-  const AI_NAMES = ["AI 维多利亚", "AI 奥古斯都", "AI 伊莎贝拉"];
 
   const gems = [
     { id: "ruby", label: "红宝石", short: "红", className: "gem-ruby", color: "#d84a3d" },
@@ -52,11 +48,9 @@
       2: document.querySelector("#tier-2"),
       3: document.querySelector("#tier-3")
     },
-    modeButtons: Array.from(document.querySelectorAll("[data-player-count]")),
     turnLabel: document.querySelector("#turn-label"),
     newGame: document.querySelector("#new-game-button"),
     rules: document.querySelector("#rules-button"),
-    humanTitle: document.querySelector("#human-title"),
     humanPrestige: document.querySelector("#human-prestige"),
     humanTokens: document.querySelector("#human-tokens"),
     humanBonuses: document.querySelector("#human-bonuses"),
@@ -82,14 +76,10 @@
     leaderboardRefresh: document.querySelector("#leaderboard-refresh"),
     scoreForm: document.querySelector("#score-form"),
     playerName: document.querySelector("#player-name"),
-    submitScore: document.querySelector("#submit-score-button"),
-    matchList: document.querySelector("#match-list"),
-    matchStatus: document.querySelector("#match-status"),
-    matchRefresh: document.querySelector("#match-refresh")
+    submitScore: document.querySelector("#submit-score-button")
   };
 
   let state;
-  let selectedPlayerCount = loadPlayerCount();
   let modalPrimaryAction = closeModal;
   let modalSecondaryAction = closeModal;
 
@@ -194,54 +184,31 @@
     };
   }
 
-  function makePlayers(count) {
-    const players = [makePlayer("human", displayPlayerName(), true)];
-    for (let index = 0; index < count - 1; index += 1) {
-      players.push(makePlayer(`ai-${index + 1}`, AI_NAMES[index], false));
-    }
-    return players;
-  }
-
-  function bankForPlayerCount(count) {
-    const colorCount = count === 2 ? 4 : count === 3 ? 5 : 7;
-    return {
-      ruby: colorCount,
-      sapphire: colorCount,
-      emerald: colorCount,
-      diamond: colorCount,
-      onyx: colorCount,
-      gold: 5
-    };
-  }
-
   function newGame() {
-    const playerCount = selectedPlayerCount;
     const decks = splitDecks();
-    const matchId = makeId("match");
     state = {
-      matchId,
-      guestId: loadGuestId(),
-      startedAt: new Date().toISOString(),
-      playerCount,
-      bank: bankForPlayerCount(playerCount),
+      bank: { ruby: 7, sapphire: 7, emerald: 7, diamond: 7, onyx: 7, gold: 5 },
       decks,
       market: { 1: [], 2: [], 3: [] },
-      nobles: shuffle(nobleTemplates).slice(0, playerCount + 1).map((noble, index) => ({
+      nobles: shuffle(nobleTemplates).slice(0, 4).map((noble, index) => ({
         ...noble,
         id: `noble-${index}`,
         points: 3
       })),
-      players: makePlayers(playerCount),
+      players: [
+        makePlayer("human", "你", true),
+        makePlayer("ai-1", "AI 维多利亚", false),
+        makePlayer("ai-2", "AI 奥古斯都", false),
+        makePlayer("ai-3", "AI 伊莎贝拉", false)
+      ],
       currentPlayerIndex: 0,
       round: 1,
       selectedCard: null,
       selectedTake: emptyGemMap(0),
       log: [],
-      process: [],
       busy: false,
       gameOver: false,
       winner: null,
-      matchSubmitted: false,
       lastSubmittedName: "",
       lastSubmittedPrestige: -1
     };
@@ -253,10 +220,7 @@
       }
     });
 
-    addLog(`${playerCount} 人局开始。先达到 15 威望即可赢得商会席位。`, {
-      type: "start",
-      playerCount
-    });
+    addLog("牌局开始。先达到 15 威望即可赢得商会席位。");
     closeModal();
     render();
   }
@@ -281,48 +245,13 @@
     return Object.values(colorMap).reduce((sum, value) => sum + value, 0);
   }
 
-  function makeId(prefix) {
-    if (window.crypto && typeof window.crypto.randomUUID === "function") {
-      return `${prefix}-${window.crypto.randomUUID()}`;
-    }
-    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  }
-
-  function stripHtml(value) {
-    const template = document.createElement("template");
-    template.innerHTML = String(value || "");
-    return (template.content.textContent || template.innerText || "").trim();
-  }
-
-  function escapeHtml(value) {
-    return String(value || "").replace(/[&<>"']/g, (char) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "\"": "&quot;",
-      "'": "&#39;"
-    })[char]);
-  }
-
-  function addLog(message, event = {}) {
-    const plain = stripHtml(message);
+  function addLog(message) {
     state.log.unshift({
       id: `${Date.now()}-${Math.random()}`,
       round: state.round,
       message
     });
     state.log = state.log.slice(0, 9);
-
-    state.process.push({
-      step: state.process.length + 1,
-      round: state.round,
-      playerId: event.playerId || currentPlayer().id,
-      playerName: event.playerName || currentPlayer().name,
-      type: event.type || "log",
-      summary: plain,
-      detail: event.detail || null,
-      at: new Date().toISOString()
-    });
   }
 
   function gemById(id) {
@@ -403,20 +332,7 @@
       player.reserved = player.reserved.filter((card) => card.id !== record.card.id);
     }
 
-    addLog(`<strong>${player.name}</strong> 买入 ${record.card.name}，获得 ${record.card.points} 威望。`, {
-      type: "buy",
-      playerId: player.id,
-      playerName: player.name,
-      detail: {
-        cardId: record.card.id,
-        cardName: record.card.name,
-        source: record.source,
-        tier: record.tier || record.card.tier,
-        points: record.card.points,
-        bonus: record.card.bonus,
-        prestigeAfter: player.prestige
-      }
-    });
+    addLog(`<strong>${player.name}</strong> 买入 ${record.card.name}，获得 ${record.card.points} 威望。`);
     return true;
   }
 
@@ -427,28 +343,13 @@
     player.reserved.push(record.card);
     replenishMarket(record.tier);
 
-    const gainedGold = state.bank.gold > 0 && tokenTotal(player.tokens) < MAX_TOKENS;
-    if (gainedGold) {
+    if (state.bank.gold > 0 && tokenTotal(player.tokens) < MAX_TOKENS) {
       state.bank.gold -= 1;
       player.tokens.gold += 1;
+      addLog(`<strong>${player.name}</strong> 预留 ${record.card.name}，并获得 1 枚黄金。`);
+    } else {
+      addLog(`<strong>${player.name}</strong> 预留 ${record.card.name}。`);
     }
-
-    addLog(
-      gainedGold
-        ? `<strong>${player.name}</strong> 预留 ${record.card.name}，并获得 1 枚黄金。`
-        : `<strong>${player.name}</strong> 预留 ${record.card.name}。`,
-      {
-        type: "reserve",
-        playerId: player.id,
-        playerName: player.name,
-        detail: {
-          cardId: record.card.id,
-          cardName: record.card.name,
-          tier: record.tier,
-          gainedGold
-        }
-      }
-    );
 
     return true;
   }
@@ -508,22 +409,15 @@
 
   function takeGems(player, selection) {
     const labels = [];
-    const detail = {};
 
     Object.entries(selection).forEach(([id, count]) => {
       if (count <= 0) return;
       state.bank[id] -= count;
       player.tokens[id] += count;
       labels.push(`${gemById(id).short}x${count}`);
-      detail[id] = count;
     });
 
-    addLog(`<strong>${player.name}</strong> 拿取宝石：${labels.join("，")}。`, {
-      type: "take",
-      playerId: player.id,
-      playerName: player.name,
-      detail
-    });
+    addLog(`<strong>${player.name}</strong> 拿取宝石：${labels.join("，")}。`);
   }
 
   function visitNoble(player) {
@@ -536,22 +430,11 @@
     state.nobles = state.nobles.filter((candidate) => candidate.id !== noble.id);
     player.nobles.push(noble);
     player.prestige += noble.points;
-    addLog(`<strong>${player.name}</strong> 获得 ${noble.name} 来访，+${noble.points} 威望。`, {
-      type: "noble",
-      playerId: player.id,
-      playerName: player.name,
-      detail: {
-        nobleId: noble.id,
-        nobleName: noble.name,
-        points: noble.points,
-        prestigeAfter: player.prestige
-      }
-    });
+    addLog(`<strong>${player.name}</strong> 获得 ${noble.name} 来访，+${noble.points} 威望。`);
     return noble;
   }
 
   function finishTurn() {
-    const activeMatchId = state.matchId;
     visitNoble(currentPlayer());
 
     if (currentPlayer().prestige >= TARGET_PRESTIGE) {
@@ -571,53 +454,27 @@
     } else {
       state.busy = true;
       render();
-      window.setTimeout(() => {
-        if (state.matchId === activeMatchId) runAiTurn();
-      }, 650);
+      window.setTimeout(runAiTurn, 650);
     }
-  }
-
-  function standings() {
-    return state.players
-      .map((player) => ({
-        id: player.id,
-        name: player.name,
-        prestige: player.prestige,
-        cards: player.cards.length,
-        reserved: player.reserved.length,
-        nobles: player.nobles.length,
-        bonuses: { ...player.bonuses },
-        tokens: { ...player.tokens }
-      }))
-      .sort((first, second) => {
-        if (second.prestige !== first.prestige) return second.prestige - first.prestige;
-        if (second.cards !== first.cards) return second.cards - first.cards;
-        return first.reserved - second.reserved;
-      });
   }
 
   function finishGame() {
     state.gameOver = true;
     state.busy = false;
-    state.winner = standings()[0];
+    state.winner = state.players
+      .slice()
+      .sort((first, second) => {
+        if (second.prestige !== first.prestige) return second.prestige - first.prestige;
+        if (second.cards.length !== first.cards.length) return second.cards.length - first.cards.length;
+        return first.reserved.length - second.reserved.length;
+      })[0];
 
     const won = state.winner.id === "human";
-    addLog(won ? "<strong>你赢得了宝石商会席位。</strong>" : `<strong>${state.winner.name}</strong> 赢得了商会席位。`, {
-      type: "finish",
-      playerId: state.winner.id,
-      playerName: state.winner.name,
-      detail: {
-        result: won ? "win" : "loss",
-        winnerId: state.winner.id,
-        standings: standings()
-      }
-    });
-
-    submitCurrentScore();
-    submitMatchRecord();
+    addLog(won ? "<strong>你赢得了宝石商会席位。</strong>" : `<strong>${state.winner.name}</strong> 赢得了商会席位。`);
+    maybeAutoSubmitScore();
     showModal({
       title: won ? "你赢了" : "牌局结束",
-      body: `<p>${state.winner.name} 以 ${state.winner.prestige} 威望赢得 ${state.playerCount} 人局。</p><p>本局胜负与完整过程会自动写入牌局档案。</p>`,
+      body: `<p>${state.winner.name} 以 ${state.winner.prestige} 威望赢得商会席位。</p><p>输入名字后可以把这局保存到胜场榜。</p>`,
       primaryText: "再来一局",
       secondaryText: "关闭",
       onPrimary: newGame,
@@ -706,11 +563,7 @@
     if (tokenTotal(selection) > 0) {
       takeGems(player, selection);
     } else {
-      addLog(`<strong>${player.name}</strong> 观察市场，结束回合。`, {
-        type: "pass",
-        playerId: player.id,
-        playerName: player.name
-      });
+      addLog(`<strong>${player.name}</strong> 观察市场，结束回合。`);
     }
 
     finishTurn();
@@ -759,11 +612,7 @@
       return;
     }
 
-    addLog("<strong>你</strong> 结束回合。", {
-      type: "pass",
-      playerId: human().id,
-      playerName: human().name
-    });
+    addLog("<strong>你</strong> 结束回合。");
     finishTurn();
   }
 
@@ -924,18 +773,10 @@
     });
   }
 
-  function renderModeTabs() {
-    elements.modeButtons.forEach((button) => {
-      button.setAttribute("aria-pressed", String(Number(button.dataset.playerCount) === selectedPlayerCount));
-    });
-  }
-
   function renderPlayerSummary() {
     const player = human();
-    player.name = displayPlayerName();
-    elements.humanTitle.textContent = player.name;
     elements.humanPrestige.textContent = String(player.prestige);
-    elements.roundLabel.textContent = `${state.playerCount} 人局 · 回合 ${state.round}`;
+    elements.roundLabel.textContent = `回合 ${state.round}`;
     elements.humanTokens.replaceChildren(...allGems.map((gem) => renderGemToken(gem, player.tokens[gem.id])));
     elements.humanBonuses.replaceChildren(...gems.map((gem) => renderGemToken(gem, player.bonuses[gem.id], "bonus-chip")));
     elements.reserveCount.textContent = `(${player.reserved.length}/${RESERVE_LIMIT})`;
@@ -1040,7 +881,6 @@
   }
 
   function render() {
-    renderModeTabs();
     renderBank();
     renderNobles();
     renderMarket();
@@ -1056,8 +896,6 @@
       title: "规则",
       body: `
         <ul>
-          <li>开局前可选择 2、3、4 人局；其余席位由 AI 自动行动。</li>
-          <li>未输入名字也能以游客身份游玩，每局胜负和过程会自动写入牌局档案。</li>
           <li>每回合只能执行 1 个行动：买入、预留、拿宝石或结束回合。</li>
           <li>拿宝石可以拿 3 种不同颜色，或在库存至少 4 枚时拿 2 枚同色。</li>
           <li>买入卡牌后获得永久奖励，奖励会抵扣之后的购买成本。</li>
@@ -1103,53 +941,15 @@
     }
   }
 
-  function loadGuestId() {
-    try {
-      const existing = localStorage.getItem(GUEST_KEY);
-      if (existing) return existing;
-      const guestId = `guest-${Math.floor(1000 + Math.random() * 9000)}`;
-      localStorage.setItem(GUEST_KEY, guestId);
-      return guestId;
-    } catch (error) {
-      return `guest-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
-  }
-
-  function loadPlayerCount() {
-    try {
-      const saved = Number.parseInt(localStorage.getItem(PLAYER_COUNT_KEY) || "4", 10);
-      return [2, 3, 4].includes(saved) ? saved : 4;
-    } catch (error) {
-      return 4;
-    }
-  }
-
-  function savePlayerCount(count) {
-    try {
-      localStorage.setItem(PLAYER_COUNT_KEY, String(count));
-    } catch (error) {
-      // Local storage is optional.
-    }
-  }
-
   function normalizedPlayerName() {
     return elements.playerName.value.trim().replace(/\s+/g, " ");
   }
 
-  function guestDisplayName() {
-    const guestId = state ? state.guestId : loadGuestId();
-    return `游客 ${guestId.replace(/^guest-/, "")}`;
-  }
-
-  function displayPlayerName() {
-    return normalizedPlayerName() || guestDisplayName();
-  }
-
   function updateSubmitState() {
+    const hasName = Boolean(normalizedPlayerName());
     const prestige = state ? human().prestige : 0;
-    const duplicate = state && displayPlayerName() === state.lastSubmittedName && prestige <= state.lastSubmittedPrestige;
-    elements.submitScore.disabled = !state || !state.gameOver || duplicate;
-    elements.submitScore.textContent = normalizedPlayerName() ? "保存" : "游客";
+    const duplicate = normalizedPlayerName() === state.lastSubmittedName && prestige <= state.lastSubmittedPrestige;
+    elements.submitScore.disabled = !state.gameOver || !hasName || duplicate;
   }
 
   function renderLeaderboard(scores) {
@@ -1208,12 +1008,10 @@
 
   async function submitCurrentScore(event) {
     if (event) event.preventDefault();
-    if (!state.gameOver) return;
+    const name = normalizedPlayerName();
+    if (!state.gameOver || !name) return;
 
-    const typedName = normalizedPlayerName();
-    const name = displayPlayerName();
-    if (typedName) savePlayerName(typedName);
-
+    savePlayerName(name);
     elements.submitScore.disabled = true;
     elements.leaderboardStatus.textContent = "正在保存...";
 
@@ -1242,7 +1040,7 @@
       state.lastSubmittedName = name;
       state.lastSubmittedPrestige = human().prestige;
       renderLeaderboard(data.scores || []);
-      elements.leaderboardStatus.textContent = data.accepted ? "结果已自动保存。" : "这位玩家已有更高记录。";
+      elements.leaderboardStatus.textContent = data.accepted ? "已保存到胜场榜。" : "这位玩家已有更高记录。";
     } catch (error) {
       elements.leaderboardStatus.textContent = "保存失败，请稍后再试。";
       elements.leaderboardStatus.classList.add("is-error");
@@ -1251,136 +1049,9 @@
     }
   }
 
-  function matchPayload() {
-    const finalStandings = standings();
-    const won = state.winner && state.winner.id === "human";
-    return {
-      id: state.matchId,
-      guestId: state.guestId,
-      playerName: displayPlayerName(),
-      playerCount: state.playerCount,
-      result: won ? "win" : "loss",
-      winnerId: state.winner ? state.winner.id : null,
-      winnerName: state.winner ? state.winner.name : "",
-      rounds: state.round,
-      startedAt: state.startedAt,
-      endedAt: new Date().toISOString(),
-      players: finalStandings,
-      actions: state.process
-    };
-  }
-
-  async function submitMatchRecord() {
-    if (!state.gameOver || state.matchSubmitted) return;
-    state.matchSubmitted = true;
-    elements.matchStatus.textContent = "正在自动保存牌局...";
-    elements.matchStatus.classList.remove("is-error");
-
-    try {
-      const response = await fetch("/api/matches", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify(matchPayload())
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Match save failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      renderMatches(data.matches || []);
-      elements.matchStatus.textContent = "本局胜负和过程已自动保存。";
-    } catch (error) {
-      state.matchSubmitted = false;
-      elements.matchStatus.textContent = "牌局自动记录失败，请稍后刷新。";
-      elements.matchStatus.classList.add("is-error");
-    }
-  }
-
-  function renderMatches(matches) {
-    elements.matchList.replaceChildren();
-
-    if (!matches.length) {
-      const empty = document.createElement("li");
-      empty.className = "match-empty";
-      empty.textContent = "还没有牌局记录。";
-      elements.matchList.append(empty);
-      return;
-    }
-
-    matches.forEach((match) => {
-      const item = document.createElement("li");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "match-entry";
-      button.dataset.matchId = match.id;
-
-      const title = document.createElement("strong");
-      title.textContent = `${match.playerName} · ${match.result === "win" ? "胜" : "负"} · ${match.playerCount}人`;
-      const meta = document.createElement("span");
-      meta.textContent = `${match.rounds} 回合 · ${match.actionCount || 0} 步 · 胜者 ${match.winnerName}`;
-
-      button.append(title, meta);
-      item.append(button);
-      elements.matchList.append(item);
-    });
-  }
-
-  async function loadMatches() {
-    elements.matchStatus.textContent = "正在加载牌局档案...";
-    elements.matchStatus.classList.remove("is-error");
-
-    try {
-      const response = await fetch(`/api/matches?limit=${MATCH_LIMIT}`, {
-        headers: { Accept: "application/json" }
-      });
-      if (!response.ok) throw new Error(`Matches unavailable: ${response.status}`);
-
-      const data = await response.json();
-      renderMatches(data.matches || []);
-      elements.matchStatus.textContent = "牌局档案已同步。";
-    } catch (error) {
-      renderMatches([]);
-      elements.matchStatus.textContent = "牌局档案暂时不可用。";
-      elements.matchStatus.classList.add("is-error");
-    }
-  }
-
-  async function openMatchDetail(id) {
-    try {
-      const response = await fetch(`/api/matches/${encodeURIComponent(id)}`, {
-        headers: { Accept: "application/json" }
-      });
-      if (!response.ok) throw new Error(`Match unavailable: ${response.status}`);
-      const data = await response.json();
-      const match = data.match;
-      const actions = (match.actions || [])
-        .slice(0, 160)
-        .map((action) => `<li>回合 ${escapeHtml(action.round)} · ${escapeHtml(action.summary)}</li>`)
-        .join("");
-      showModal({
-        title: `${match.playerName} · ${match.result === "win" ? "胜局" : "负局"}`,
-        body: `<p>${match.playerCount} 人局，${match.rounds} 回合，胜者 ${escapeHtml(match.winnerName)}。</p><ol>${actions}</ol>`,
-        primaryText: "关闭",
-        secondaryText: "",
-        onPrimary: closeModal,
-        onSecondary: closeModal
-      });
-    } catch (error) {
-      elements.matchStatus.textContent = "读取牌局过程失败。";
-      elements.matchStatus.classList.add("is-error");
-    }
-  }
-
-  function setPlayerCount(count) {
-    if (![2, 3, 4].includes(count) || count === selectedPlayerCount) return;
-    selectedPlayerCount = count;
-    savePlayerCount(count);
-    newGame();
+  function maybeAutoSubmitScore() {
+    if (!normalizedPlayerName()) return;
+    submitCurrentScore();
   }
 
   function attachEvents() {
@@ -1396,9 +1067,6 @@
       handleCardSelect(card.dataset.source, Number(card.dataset.tier), card.dataset.id);
     });
 
-    elements.modeButtons.forEach((button) => {
-      button.addEventListener("click", () => setPlayerCount(Number(button.dataset.playerCount)));
-    });
     elements.buy.addEventListener("click", handleBuy);
     elements.reserve.addEventListener("click", handleReserve);
     elements.take.addEventListener("click", handleTake);
@@ -1413,21 +1081,13 @@
     elements.scoreForm.addEventListener("submit", submitCurrentScore);
     elements.playerName.addEventListener("input", () => {
       savePlayerName(normalizedPlayerName());
-      if (state && !state.gameOver) human().name = displayPlayerName();
-      render();
+      updateSubmitState();
     });
     elements.leaderboardRefresh.addEventListener("click", loadLeaderboard);
-    elements.matchRefresh.addEventListener("click", loadMatches);
-    elements.matchList.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-match-id]");
-      if (!button) return;
-      openMatchDetail(button.dataset.matchId);
-    });
   }
 
   elements.playerName.value = loadPlayerName();
   attachEvents();
   newGame();
   loadLeaderboard();
-  loadMatches();
 })();
